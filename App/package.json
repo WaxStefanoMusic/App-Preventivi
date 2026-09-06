@@ -65,7 +65,8 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "App Preventivi",
-      "include": "build/installer.nsh"
+      "include": "build/installer.nsh",
+      "artifactName": "App-Preventivi-Setup-${version}.exe"
     },
     "portable": {
       "artifactName": "App-Preventivi-portable-${version}.exe"
@@ -74,7 +75,8 @@
       {
         "provider": "github",
         "owner": "WaxStefanoMusic",
-        "repo": "App-Preventivi"
+        "repo": "App-Preventivi",
+        "releaseType": "release"
       }
     ]
   },

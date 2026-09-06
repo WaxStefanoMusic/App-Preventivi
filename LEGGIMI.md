@@ -206,3 +206,38 @@ alla generazione successiva.
 Avviando l'app dalla cartella di build (`Installer\win-unpacked`) i preventivi
 vengono comunque scritti qui accanto, non dentro `Installer\`: quella cartella
 viene rifatta a ogni compilazione.
+
+## Pubblicare una versione nuova
+
+L'app installata controlla da sola le Release della repository
+[App-Preventivi](https://github.com/WaxStefanoMusic/App-Preventivi): all'avvio
+e ogni sei ore. Se ne trova una più recente la scarica in sottofondo e, a
+scaricamento finito, chiede se installarla adesso o alla prossima chiusura —
+mai a metà di un preventivo. Nel menu `?` c'è anche «Controlla aggiornamenti…».
+
+Perché una modifica arrivi a chi ha l'app installata servono due cose: **il
+numero di versione più alto** e **una Release pubblicata**.
+
+```
+1. alza "version" in App\package.json          (1.0.1 → 1.0.2)
+2. git commit e git push
+3. cd App
+   GH_TOKEN=$(gh auth token) npx electron-builder --win nsis portable --publish always
+```
+
+Se l'invio dei file si interrompe a metà — capita, sono 100 MB a file — gli
+eseguibili sono comunque già pronti in `Installer\`: si finisce a mano con
+
+```
+gh release upload v1.0.2 Installer\App-Preventivi-Setup-1.0.2.exe ^
+  Installer\App-Preventivi-Setup-1.0.2.exe.blockmap ^
+  Installer\App-Preventivi-portable-1.0.2.exe Installer\latest.yml --clobber
+```
+
+`latest.yml` è il foglietto che l'app legge per sapere qual è l'ultima versione:
+nella Release ci deve essere sempre, o l'aggiornamento non parte. Anche il nome
+dell'installer non deve avere spazi, perché GitHub li sostituisce negli allegati
+e l'app andrebbe a cercare un file che lì non esiste.
+
+La versione portatile non si aggiorna da sé: è un solo file, senza niente da
+installare, e va riscaricata quando serve.
