@@ -1,6 +1,6 @@
 {
   "name": "app-preventivi",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "App Preventivi — creazione, stampa ed esportazione di preventivi in formato A4",
   "main": "main.js",
   "author": "Mattew",
@@ -21,11 +21,18 @@
   "build": {
     "appId": "it.mattew.preventivi",
     "productName": "App Preventivi",
-    "directories": { "output": "Installer", "buildResources": "build" },
+    "directories": {
+      "output": "Installer",
+      "buildResources": "build"
+    },
     "files": [
       "**/*",
-      "!Installer/**", "!Preventivi/**", "!build/**",
-      "!crea-standalone.js", "!avvia.cmd", "!*.md"
+      "!Installer/**",
+      "!Preventivi/**",
+      "!build/**",
+      "!crea-standalone.js",
+      "!avvia.cmd",
+      "!*.md"
     ],
     "fileAssociations": [
       {
@@ -37,8 +44,18 @@
     ],
     "win": {
       "target": [
-        { "target": "nsis", "arch": ["x64"] },
-        { "target": "portable", "arch": ["x64"] }
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
       ]
     },
     "nsis": {
@@ -50,6 +67,22 @@
       "shortcutName": "App Preventivi",
       "include": "build/installer.nsh"
     },
-    "portable": { "artifactName": "App-Preventivi-portable-${version}.exe" }
+    "portable": {
+      "artifactName": "App-Preventivi-portable-${version}.exe"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "WaxStefanoMusic",
+        "repo": "App-Preventivi"
+      }
+    ]
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.9"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/WaxStefanoMusic/App-Preventivi.git"
   }
 }

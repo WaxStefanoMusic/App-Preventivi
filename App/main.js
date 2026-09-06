@@ -17,6 +17,8 @@ const { execFile } = require('child_process');
    sviluppo sia da eseguibile installato. */
 app.setName('App Preventivi');
 
+const { autoUpdater } = require('electron-updater');
+
 const STATE_FILE = path.join(app.getPath('userData'), 'finestra.json');
 const CONFIG_FILE = path.join(app.getPath('userData'), 'config.json');
 
@@ -334,6 +336,9 @@ function buildMenu() {
     {
       label: '?',
       submenu: [{
+        label: 'Controlla aggiornamenti…',
+        click: () => cercaAggiornamenti(true),
+      }, {
         label: 'Informazioni',
         click: () => dialog.showMessageBox(win, {
           type: 'info', title: 'App Preventivi',
@@ -344,6 +349,93 @@ function buildMenu() {
       }],
     },
   ]);
+}
+
+/* -------------------------------------------------------------------------
+   Aggiornamenti automatici
+
+   Le versioni nuove stanno nelle Release della repository su GitHub, insieme a
+   un foglietto («latest.yml») che dice qual è l'ultima. L'app lo legge
+   all'avvio e poi ogni sei ore, scarica in sottofondo quello che serve e SOLO
+   ALLA FINE si fa viva: mentre si scrive un preventivo non deve succedere
+   niente.
+
+   Chi decide quando installare è l'utente. «Installa adesso» chiude la
+   finestra passando dalla porta di sempre — quella che, se c'è del lavoro non
+   salvato, si ferma e lo chiede — e l'aggiornamento parte solo se la finestra
+   si è chiusa davvero. Rispondendo «Alla prossima chiusura» non si fa niente:
+   il pacchetto è già sul disco e verrà applicato uscendo dall'app.
+   ------------------------------------------------------------------------- */
+/* Il controllo chiesto dal menu parla anche quando non c'è niente di nuovo:
+   chi lo chiede vuole una risposta. Quello automatico invece tace. */
+let controlloChiesto = false;
+
+function installaAggiornamento() {
+  /* quitAndInstall() da solo chiuderebbe tutto senza passare dalla domanda sul
+     preventivo non salvato: prima si chiude la finestra con le sue regole, e
+     solo se si è chiusa per davvero si lascia partire l'installazione */
+  if (!win || win.isDestroyed()) { autoUpdater.quitAndInstall(false, true); return; }
+  win.once('closed', () => autoUpdater.quitAndInstall(false, true));
+  win.close();
+}
+
+function preparaAggiornamenti() {
+  /* in sviluppo non c'è nessuna versione installata da sostituire: il modulo
+     si lamenterebbe e basta */
+  if (!app.isPackaged) return;
+
+  autoUpdater.autoDownload = true;           // si scarica da sé, in sottofondo
+  autoUpdater.autoInstallOnAppQuit = true;   // e comunque si applica all'uscita
+
+  autoUpdater.on('update-downloaded', (info) => {
+    const r = dialog.showMessageBoxSync(win, {
+      type: 'question', noLink: true, defaultId: 0, cancelId: 1,
+      buttons: ['Installa adesso', 'Alla prossima chiusura'],
+      title: 'Aggiornamento pronto',
+      message: 'È pronta la versione ' + info.version + '.',
+      detail: 'È già stata scaricata. Installandola adesso l\'app si chiude e si riapre '
+            + 'aggiornata; se hai un preventivo non salvato te lo chiede prima.',
+    });
+    if (r === 0) installaAggiornamento();
+  });
+
+  autoUpdater.on('update-not-available', () => {
+    if (!controlloChiesto) return;
+    controlloChiesto = false;
+    dialog.showMessageBox(win, {
+      type: 'info', buttons: ['Chiudi'], title: 'App Preventivi',
+      message: 'Sei già all\'ultima versione.',
+      detail: 'Versione installata: ' + app.getVersion(),
+    });
+  });
+
+  /* Senza rete, o con GitHub irraggiungibile, non è successo niente di grave:
+     si riproverà. Lo si dice solo a chi ha chiesto lui di controllare. */
+  autoUpdater.on('error', (e) => {
+    if (!controlloChiesto) return;
+    controlloChiesto = false;
+    dialog.showMessageBox(win, {
+      type: 'warning', buttons: ['Chiudi'], title: 'App Preventivi',
+      message: 'Non sono riuscito a controllare gli aggiornamenti.',
+      detail: String((e && e.message) || e),
+    });
+  });
+
+  cercaAggiornamenti();
+  setInterval(cercaAggiornamenti, 6 * 60 * 60 * 1000);
+}
+
+function cercaAggiornamenti(chiestoDallUtente) {
+  if (chiestoDallUtente) controlloChiesto = true;
+  if (!app.isPackaged) {
+    if (chiestoDallUtente) dialog.showMessageBox(win, {
+      type: 'info', buttons: ['Chiudi'], title: 'App Preventivi',
+      message: 'Gli aggiornamenti valgono per l\'app installata.',
+      detail: 'Questa copia gira dai sorgenti, quindi non c\'è niente da aggiornare.',
+    });
+    return;
+  }
+  autoUpdater.checkForUpdates().catch(() => {});
 }
 
 /* -------------------------------------------------------------------------
@@ -912,6 +1004,7 @@ if (!app.requestSingleInstanceLock()) {
   app.whenReady().then(() => {
     annotaCartellaPerDisinstallazione();
     createWindow();
+    preparaAggiornamenti();   // la finestra c'è: se serve dire qualcosa, c'è dove dirlo
     screen.on('display-metrics-changed', onDisplaysChanged);
     screen.on('display-added', onDisplaysChanged);
     screen.on('display-removed', onDisplaysChanged);
