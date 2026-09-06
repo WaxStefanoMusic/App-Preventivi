@@ -1,0 +1,23 @@
+# ---------------------------------------------------------------------------
+# Quello che non va su GitHub.
+# ---------------------------------------------------------------------------
+
+# Si ricrea da sé: le librerie con «npm install», gli eseguibili con
+# «npm run installer». Sono anche centinaia di megabyte, e GitHub rifiuta i
+# file singoli oltre i 100 MB.
+node_modules/
+App/Installer/
+
+# I preventivi, le intestazioni e i backup sono dati di lavoro, non codice.
+# Provando l'app senza averle scelto una cartella, queste tre cartelle nascono
+# qui accanto: non devono finire pubblicate per sbaglio.
+Preventivi/
+Intestazione/
+Backup/
+*.preventivo
+
+# scarti di Windows e degli editor
+Thumbs.db
+desktop.ini
+*.swp
+.vscode/

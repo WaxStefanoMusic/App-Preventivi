@@ -1,0 +1,55 @@
+{
+  "name": "app-preventivi",
+  "version": "1.0.0",
+  "description": "App Preventivi — creazione, stampa ed esportazione di preventivi in formato A4",
+  "main": "main.js",
+  "author": "Mattew",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --enable-logging",
+    "installer": "electron-builder --win nsis portable",
+    "dist": "electron-builder --win nsis portable",
+    "pack": "electron-builder --dir",
+    "html": "node crea-standalone.js"
+  },
+  "devDependencies": {
+    "electron": "^43.2.0",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "it.mattew.preventivi",
+    "productName": "App Preventivi",
+    "directories": { "output": "Installer", "buildResources": "build" },
+    "files": [
+      "**/*",
+      "!Installer/**", "!Preventivi/**", "!build/**",
+      "!crea-standalone.js", "!avvia.cmd", "!*.md"
+    ],
+    "fileAssociations": [
+      {
+        "ext": "preventivo",
+        "name": "Preventivo",
+        "description": "Preventivo di App Preventivi",
+        "role": "Editor"
+      }
+    ],
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "App Preventivi",
+      "include": "build/installer.nsh"
+    },
+    "portable": { "artifactName": "App-Preventivi-portable-${version}.exe" }
+  }
+}

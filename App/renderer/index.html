@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' blob: data:">
+<title>App Preventivi</title>
+<link rel="stylesheet" href="styles.css">
+<!-- il formato del foglio (A4 verticale o orizzontale) viene scritto qui dall'app -->
+<style id="pageStyle"></style>
+</head>
+<body>
+
+<header class="app noprint">
+  <div class="brand">
+    <span class="logo">€</span>
+    <span>App Preventivi<small>Preventivi su A4, stampa ed esportazione</small></span>
+  </div>
+  <div class="docname" id="docname" role="button" tabindex="0"
+       title="Clicca per dare un nome al preventivo">Preventivo senza nome</div>
+  <div class="spacer"></div>
+
+  <!-- al centro: dove finiscono i file e come metterli al sicuro -->
+  <div class="centrali" id="centrali">
+    <button id="btnCartella" title="Scegli dove salvare preventivi, intestazioni e backup">📁 <span class="et">Cartella</span></button>
+    <button id="btnBackup" title="Apri i backup di questo preventivo">🛟 <span class="et">Backup</span></button>
+  </div>
+
+  <div class="spacer"></div>
+  <button id="btnNuovo" class="ghost" title="Preventivo nuovo (vuoto, con la tua intestazione)">✦ <span class="et">Nuovo</span></button>
+  <button id="btnApri" class="ghost" title="Apri un preventivo salvato (Ctrl+O)">📂 <span class="et">Apri</span></button>
+  <button id="btnRecenti" class="ghost" title="Gli ultimi dieci preventivi">🕘 <span class="et">Apri Recente</span></button>
+  <button id="btnImporta" class="ghost" title="Importa le voci da un foglio Excel o da un altro preventivo">⇧ <span class="et">Importa</span></button>
+  <button id="btnSalva" class="ghost" title="Salva (Ctrl+S)">💾 <span class="et">Salva</span></button>
+  <button id="btnSalvaCome" class="ghost" title="Salva con nome (Ctrl+Shift+S)"><span class="et">Salva come…</span><span class="ic">💾+</span></button>
+  <button id="btnTema" class="ghost" title="Tema chiaro / scuro">◐</button>
+</header>
+
+<nav class="tabbar noprint" id="tabbar"></nav>
+
+<main class="noprint"><div class="wrap" id="view"></div></main>
+
+<!-- Il preventivo come esce dalla stampante: intestazione, dati del cliente e
+     data. A schermo non si vede, viene costruito al momento della stampa. -->
+<div id="stampa"></div>
+
+<div class="ov noprint" id="overlay" hidden><div class="modal" id="modal"></div></div>
+<div id="toasts" class="noprint"></div>
+
+<input type="file" id="fileInput" accept=".json,application/json" hidden>
+
+<script src="boot.js"></script>
+<script src="core.js"></script>
+<script src="desktop.js"></script>
+</body>
+</html>

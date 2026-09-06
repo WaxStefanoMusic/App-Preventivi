@@ -1,0 +1,758 @@
+/* ==============================================================================
+   App Preventivi — foglio di stile
+   Stessi token dell'app «Rendicontazione»: le due applicazioni si somigliano
+   perché vengono usate una accanto all'altra.
+   ============================================================================== */
+
+/* ============================================================
+   TOKENS
+   ============================================================ */
+:root{
+  color-scheme: light;
+  --surface-1:#fcfcfb;
+  --plane:#f9f9f7;
+  --ink-1:#0b0b0b;
+  --ink-2:#52514e;
+  --ink-3:#898781;
+  --grid:#e1e0d9;
+  --axis:#c3c2b7;
+  --border:rgba(11,11,11,.10);
+  --border-strong:rgba(11,11,11,.18);
+  --accent:#2a78d6;
+  --accent-soft:#cde2fb;
+  --seq-500:#256abf;
+  --good:#0ca30c;
+  --warning:#fab219;
+  --critical:#d03b3b;
+  --good-text:#006300;
+  --shadow:0 1px 2px rgba(11,11,11,.06),0 8px 24px rgba(11,11,11,.06);
+  --radius:10px;
+  --font:system-ui,-apple-system,"Segoe UI",sans-serif;
+
+  /* ------------------------------------------------------------------
+     Le misure delle scritte del foglio stanno qui, in un posto solo, e le
+     usano SIA lo schermo SIA la stampa: quello che si vede nell'app e quello
+     che esce dalla stampante non possono più prendere strade diverse.
+     Sono in pixel perché su carta un pixel CSS è una misura fissa (1/96 di
+     pollice), quindi la stessa cifra dà la stessa grandezza in tutti e due.
+     ------------------------------------------------------------------ */
+  --t-cella:13px;      /* il testo delle righe */
+  --t-testata:11px;    /* ARTICOLO, DESCRIZIONE, … */
+  --t-tot-k:13px;      /* IMPONIBILE TOTALE, IVA TOTALE */
+  --t-tot-v:12.5px;    /* i loro importi */
+  --t-fin-k:14px;      /* TOTALE IVATO */
+  --t-fin-v:18px;      /* il suo importo */
+  --t-rata-k:11.5px;   /* ACCONTO ALLA CONFERMA D'ORDINE */
+  --t-rata-p:13px;     /* la percentuale della rata */
+  --t-rata-v:13px;     /* il suo importo */
+  --t-sezione:14px;    /* il nome del TAB sopra la tabella */
+  --t-cliente:12.5px;  /* dati del cliente e data */
+  --t-intest:11pt;     /* l'intestazione, come nel suo editor */
+
+  /* Larghezza dell'area stampabile: A4 meno i margini di stampa (11mm per
+     lato, vedi «applicaFormatoPagina»). Il foglio a schermo è largo
+     ESATTAMENTE quanto quella, più il bordo e l'imbottitura del riquadro:
+     così l'impaginazione che si vede è già quella che verrà stampata. */
+  --stampabile:188mm;
+  --foglio:calc(188mm + 26px);
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --surface-1:#1a1a19;
+  --plane:#0d0d0d;
+  --ink-1:#ffffff;
+  --ink-2:#c3c2b7;
+  --ink-3:#898781;
+  --grid:#2c2c2a;
+  --axis:#383835;
+  --border:rgba(255,255,255,.10);
+  --border-strong:rgba(255,255,255,.20);
+  --accent:#3987e5;
+  --accent-soft:#184f95;
+  --seq-500:#3987e5;
+  --good-text:#0ca30c;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
+}
+:root[data-orient="orizzontale"]{ --stampabile:275mm; --foglio:calc(275mm + 26px) }
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;font-family:var(--font);background:var(--plane);color:var(--ink-1);
+  font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased;
+  display:flex;flex-direction:column;
+}
+
+/* ============================================================
+   HEADER
+   ============================================================ */
+header.app{
+  display:flex;align-items:center;gap:12px;padding:10px 16px;
+  background:var(--surface-1);border-bottom:1px solid var(--border);flex:0 0 auto;
+}
+.brand{display:flex;align-items:center;gap:9px;font-weight:640;letter-spacing:-.01em;white-space:nowrap}
+.brand .logo{
+  width:26px;height:26px;border-radius:7px;background:var(--accent);color:#fff;
+  display:grid;place-items:center;font-size:14px;flex:0 0 auto;
+}
+.brand small{display:block;font-weight:420;color:var(--ink-3);font-size:11px;line-height:1}
+.spacer{flex:1}
+/* I due tasti al centro della testata: dove si salva, e come si mette al sicuro.
+   Centrati sulla finestra, non fra i due gruppi di pulsanti — che hanno pesi
+   diversi e li lascerebbero visibilmente storti. Quando la finestra si stringe
+   si torna al flusso normale, altrimenti si sovrapporrebbero. */
+.centrali{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.centrali button{font-size:12.5px}
+/* «Salva come…» ha un'icona di scorta, per quando le parole spariscono */
+header.app .ic{display:none}
+
+/* La testata si stringe in tre passi via via che la finestra si restringe, e
+   torna com'era appena c'è spazio. Senza, i tasti si accavallavano:
+   il gruppo centrale è staccato dal flusso e non spinge via nessuno. */
+/* Centrati sulla finestra solo quando c'è spazio davvero: staccati dal flusso
+   non spingono via nessuno, e in una finestra stretta finivano sotto ai tasti.
+   Sotto questa misura tornano in fila, dove non possono sovrapporsi. */
+@media (min-width:1700px){
+  header.app{position:relative}
+  .centrali{position:absolute;left:50%;transform:translateX(-50%)}
+}
+@media (max-width:1399px){
+  header.app{gap:8px;padding:10px 12px}
+  header.app button{font-size:12px;padding:5px 9px;gap:5px}
+  .docname{max-width:24ch}
+}
+@media (max-width:1150px){
+  header.app{gap:5px;padding:9px 10px}
+  header.app button{font-size:11.5px;padding:4px 7px;gap:4px}
+  .brand small{display:none}
+  .docname{max-width:18ch;font-size:12px}
+}
+/* sotto questa misura restano le sole icone: i nomi sono nei suggerimenti */
+@media (max-width:980px){
+  header.app .et{display:none}
+  header.app .ic{display:inline}
+  header.app button{font-size:14px;padding:4px 8px}
+  .docname{max-width:14ch}
+}
+/* Nome del preventivo: si preme per cambiarlo */
+.docname{
+  font-size:12.5px;color:var(--ink-2);max-width:34ch;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap;
+  padding:4px 9px;border-radius:7px;cursor:pointer;
+  border:1px solid transparent;
+}
+.docname:hover{background:var(--plane);border-color:var(--border);color:var(--ink-1)}
+.docname:focus-visible{outline:2px solid var(--accent);outline-offset:-1px}
+.docname.senzanome{color:var(--ink-3);font-style:italic}
+.docname .mod{color:var(--warning);font-weight:700;margin-left:3px;font-style:normal}
+
+/* ============================================================
+   BUTTONS / INPUTS
+   ============================================================ */
+button,.btn{
+  font:inherit;font-size:13px;border:1px solid var(--border-strong);background:var(--surface-1);
+  color:var(--ink-1);padding:6px 11px;border-radius:8px;cursor:pointer;
+  display:inline-flex;align-items:center;gap:6px;white-space:nowrap;
+  transition:background .12s,border-color .12s,transform .06s;
+}
+button:hover,.btn:hover{background:var(--plane);border-color:var(--ink-3)}
+button:active{transform:translateY(1px)}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button.primary:hover{background:var(--seq-500);border-color:var(--seq-500)}
+button.ghost{border-color:transparent;background:transparent}
+button.ghost:hover{background:var(--plane);border-color:var(--border)}
+button.danger{color:var(--critical);border-color:var(--border-strong)}
+button.danger:hover{background:rgba(208,59,59,.1);border-color:var(--critical)}
+button:disabled{opacity:.45;cursor:not-allowed}
+button.sm{padding:3px 8px;font-size:12px;border-radius:6px}
+input,select,textarea{
+  font:inherit;font-size:13px;padding:6px 9px;border-radius:8px;
+  border:1px solid var(--border-strong);background:var(--surface-1);color:var(--ink-1);
+}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:transparent}
+label.fld{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--ink-2);font-weight:560}
+label.fld input,label.fld select,label.fld textarea{font-weight:400;color:var(--ink-1)}
+
+/* gruppo di bottoni che si escludono a vicenda (verticale / orizzontale) */
+.segbtns{display:flex;border:1px solid var(--border-strong);border-radius:8px;overflow:hidden}
+.segbtns button{border:0;border-radius:0;background:transparent;padding:5px 11px;font-size:12.5px;color:var(--ink-2)}
+.segbtns button + button{border-left:1px solid var(--border)}
+.segbtns button.on{background:var(--accent);color:#fff;font-weight:600}
+.segbtns button.on:hover{background:var(--seq-500)}
+
+/* ============================================================
+   TAB BAR
+   ============================================================ */
+.tabbar{
+  display:flex;align-items:stretch;gap:4px;padding:0 10px;background:var(--surface-1);
+  border-bottom:1px solid var(--border);overflow-x:auto;flex:0 0 auto;scrollbar-width:thin;
+}
+.tabbar::-webkit-scrollbar{height:6px}
+.tabbar::-webkit-scrollbar-thumb{background:var(--axis);border-radius:3px}
+.tab{
+  display:flex;align-items:center;gap:7px;padding:9px 10px;border:0;background:transparent;
+  border-bottom:2px solid transparent;border-radius:0;color:var(--ink-2);font-size:13px;
+  max-width:280px;flex:0 0 auto;cursor:pointer;
+}
+.tab:hover{background:var(--plane);border-bottom-color:var(--grid)}
+.tab.active{color:var(--ink-1);border-bottom-color:var(--accent);font-weight:600;background:transparent}
+.tab .ico{font-size:14px;flex:0 0 auto;opacity:.9}
+.tab .lbl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tab .cnt{
+  font-size:11px;color:var(--ink-3);background:var(--plane);border:1px solid var(--border);
+  padding:0 5px;border-radius:20px;flex:0 0 auto;font-variant-numeric:tabular-nums;
+}
+.tab .x{
+  opacity:0;font-size:15px;line-height:1;color:var(--ink-3);padding:0 2px;border-radius:4px;
+  border:0;background:transparent;
+}
+.tab:hover .x,.tab.active .x{opacity:.7}
+.tab .x:hover{opacity:1;color:var(--critical);background:transparent}
+.tab.dragover{background:var(--accent-soft)}
+.tabadd{display:flex;align-items:center;gap:6px;padding:6px 4px 6px 10px;flex:0 0 auto;margin-left:4px;border-left:1px solid var(--border)}
+
+/* ============================================================
+   LAYOUT
+   ============================================================ */
+main{flex:1;overflow:auto;padding:16px 16px 60px}
+.wrap{max-width:none;margin:0 auto}
+
+/* La barra dei comandi non è legata alla misura del foglio: i pulsanti devono
+   starci in fila, altrimenti su A4 verticale andrebbero a capo. */
+.barra{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 auto 12px;
+  max-width:min(100%,1180px);
+}
+.barra .sep{width:1px;align-self:stretch;background:var(--border);margin:2px 2px}
+.barra .campo-data{display:flex;align-items:center;gap:6px}
+.barra .campo-data span{font-size:12px;color:var(--ink-2);font-weight:560}
+.barra select#ambito{font-size:12.5px;padding:5px 8px}
+input.data{width:120px;text-align:center;font-variant-numeric:tabular-nums;letter-spacing:.02em}
+input.data::placeholder{color:var(--ink-3);opacity:.7;letter-spacing:0}
+
+/* Il foglio: nessun titolo, nessuna cornice di sezione, solo la tabella. È largo
+   quanto il foglio che verrà stampato, così quello che si vede a schermo è già
+   impaginato come uscirà dalla stampante. */
+.foglio{
+  background:var(--surface-1);border:1px solid var(--border);border-radius:8px;
+  box-shadow:var(--shadow);padding:12px;
+  max-width:var(--foglio);margin:0 auto;
+}
+.tablewrap{overflow-x:auto}
+
+/* ============================================================
+   TABELLA DEL PREVENTIVO
+   ============================================================ */
+table.voci{border-collapse:collapse;width:100%;font-size:var(--t-cella);table-layout:fixed}
+/* Le testate vanno a capo invece di sconfinare nella colonna accanto: «QUANTITÀ»
+   è una parola sola e in una colonna stretta non ci sta di fila. */
+table.voci th{
+  text-align:left;font-weight:620;font-size:var(--t-testata);text-transform:uppercase;letter-spacing:.02em;
+  color:var(--ink-3);padding:8px 6px;background:var(--plane);border-bottom:1px solid var(--grid);
+  position:sticky;top:0;z-index:2;overflow-wrap:break-word;line-height:1.25;
+}
+table.voci td{padding:4px 6px;border-bottom:1px solid var(--grid);vertical-align:middle}
+table.voci tbody tr:hover{background:var(--plane)}
+table.voci td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+/* la testata si allinea a destra ma può andare a capo: «PREZZO UNITARIO €» in
+   una colonna stretta sta su due righe, non tagliato a metà */
+table.voci th.num{text-align:right}
+
+/* Le larghezze sono in percentuale: lo stesso preventivo regge sia il foglio
+   verticale sia quello orizzontale. Alla descrizione va lo spazio che avanza. */
+.c-art     {width:10%}
+.c-desc    {width:35%}
+.c-prezzo  {width:11%}
+.c-qta     {width:10%}
+.c-imp     {width:13%}
+.c-iva     {width:7%}
+.c-tot     {width:13%}
+.c-az      {width:32px}
+
+/* Nel preventivo complessivo entra la colonna TAB: lo spazio lo mette la
+   descrizione, che qui è comunque solo da rileggere — la si scrive nella
+   sezione sua. */
+.c-tab{width:11%}
+.voci.con-tab .c-art {width:9%}
+.voci.con-tab .c-desc{width:27%}
+.voci.con-tab .c-qta {width:9%}
+.voci.con-tab .c-iva {width:6%}
+
+.cell-in{
+  width:100%;border:1px solid transparent;background:transparent;padding:3px 5px;border-radius:6px;
+  font-size:var(--t-cella);color:inherit;
+}
+.cell-in:hover{border-color:var(--border-strong);background:var(--surface-1)}
+.cell-in:focus{background:var(--surface-1)}
+.cell-in.num{text-align:right;font-variant-numeric:tabular-nums}
+/* La descrizione è il campo che conta: cresce con il testo, e quando non basta
+   c'è il suo pulsante per aprirla in grande. */
+textarea.cell-in{
+  display:block;resize:none;overflow:hidden;font-family:inherit;line-height:1.4;
+  min-height:26px;max-height:96px;white-space:pre-wrap;word-break:break-word;
+}
+textarea.cell-in:focus{overflow:auto}
+.descbox{display:flex;align-items:flex-start;gap:3px}
+.descbox textarea{flex:1;min-width:0}
+button.descbtn{
+  flex:0 0 auto;padding:2px 6px;font-size:13px;line-height:1.3;color:var(--ink-3);
+  border-color:transparent;background:transparent;margin-top:1px;
+}
+button.descbtn:hover{color:var(--accent);border-color:var(--accent);background:var(--surface-1)}
+/* la descrizione più lunga di quel che si vede si fa riconoscere */
+.descbox.lunga button.descbtn{color:var(--accent)}
+
+td.calc{font-variant-numeric:tabular-nums;color:var(--ink-1);padding-right:11px;font-weight:520}
+td.az{text-align:center;padding:0}
+td.az button{
+  border:0;background:transparent;color:var(--ink-3);padding:3px 5px;font-size:14px;line-height:1;
+  opacity:0;
+}
+tr:hover td.az button,td.az button:focus{opacity:1}
+td.az button:hover{color:var(--critical);background:transparent}
+/* Colonna TAB del preventivo complessivo: promemoria della sezione di
+   provenienza, e scorciatoia per andarci. */
+td.tabsez{padding:3px 4px}
+button.vaitab{
+  width:100%;justify-content:flex-start;gap:5px;padding:3px 6px;
+  font-size:11.5px;color:var(--ink-2);background:transparent;border-color:transparent;
+  border-radius:6px;overflow:hidden;
+}
+button.vaitab .i{flex:0 0 auto;opacity:.85}
+button.vaitab .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+button.vaitab:hover{background:var(--surface-1);border-color:var(--accent);color:var(--accent)}
+
+/* Promo: la riga va a capo dentro se stessa. Sopra il prezzo di prima,
+   sbarrato ma con i suoi conti; sotto quello promo, che è quello che conta. */
+tr.conpromo td{vertical-align:top}
+/* Articolo, descrizione, quantità e IVA valgono per tutte e due le righe dei
+   prezzi: stanno in mezzo, non appesi in alto — e non si sbarrano, perché
+   l'articolo non è cambiato, è cambiato solo quanto costa. */
+tr.conpromo td.cel-art,
+tr.conpromo td.cel-desc,
+tr.conpromo td.cel-mezzo,
+tr.conpromo td.tabsez{vertical-align:middle}
+/* Le due righe hanno la stessa altezza in TUTTE le colonne dei soldi, campi di
+   testo compresi: altrimenti la riga del prezzo — che è un campo, e quindi più
+   alto — scivola sotto rispetto a imponibile e totale, e i numeri non stanno
+   più su due linee ma su quattro.
+   Vale SOLO a schermo: sulla carta il foglio ha misure sue, in punti
+   tipografici, e queste altezze in pixel gli sfascerebbero le celle. */
+@media screen{
+  tr.conpromo .orig,
+  tr.conpromo .pro{
+    display:block;box-sizing:border-box;
+    height:27px;line-height:27px;padding:0 5px;margin:0;font-size:13px;
+  }
+  tr.conpromo input.orig,
+  tr.conpromo input.pro{
+    height:27px;line-height:normal;padding:0 5px;margin:0;font-size:13px;
+  }
+}
+tr.conpromo .orig{text-decoration:line-through;color:var(--ink-3)}
+tr.conpromo .pro{font-weight:400}
+tr.conpromo input.pro{
+  font-weight:400;color:var(--good-text);
+  border-color:var(--border);background:var(--surface-1);
+}
+tr.conpromo input.pro::placeholder{color:var(--ink-3);font-weight:400;font-style:italic}
+tr.conpromo td.calc .pro{color:var(--good-text)}
+
+/* menu del tasto destro, versione per il browser */
+.menuctx{
+  position:fixed;z-index:9000;min-width:190px;padding:5px;
+  background:var(--surface-1);border:1px solid var(--border-strong);border-radius:10px;
+  box-shadow:0 12px 34px rgba(0,0,0,.22);
+}
+.menuctx button{
+  display:block;width:100%;text-align:left;border:0;background:transparent;
+  padding:7px 9px;border-radius:7px;font-size:13px;font-weight:560;color:var(--ink-1);
+}
+.menuctx button:hover{background:var(--plane)}
+
+/* Il menu del tasto «Seleziona»: le due scelte veloci, poi l'elenco delle
+   sezioni con la spunta. La scelta in corso porta un segno di spunta a
+   sinistra, incolonnato con le caselle di sotto. */
+.menusel{min-width:230px;max-height:min(70vh,520px);overflow:auto}
+.menusel button[data-m]{padding-left:28px;position:relative}
+.menusel button[data-m].segnata::before{
+  content:'✓';position:absolute;left:9px;top:50%;transform:translateY(-50%);
+  font-size:12px;font-weight:700;color:var(--accent);
+}
+.menusel .divisore{height:1px;background:var(--border);margin:5px 4px}
+.menusel .spunta{
+  display:flex;align-items:center;gap:9px;padding:6px 9px;border-radius:7px;
+  font-size:13px;font-weight:560;color:var(--ink-1);cursor:pointer;
+}
+.menusel .spunta:hover{background:var(--plane)}
+.menusel .spunta input{width:14px;height:14px;margin:0;accent-color:var(--accent);cursor:pointer}
+.menusel .spunta span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.menusel .vuoto{padding:7px 9px;font-size:12.5px;color:var(--ink-3)}
+
+.rigavuota{padding:26px 10px;text-align:center;color:var(--ink-3);font-size:13px}
+/* Il «＋» sta in mezzo, sotto la tabella. */
+.azionitab{display:flex;flex-direction:column;align-items:center;gap:7px;margin-top:12px}
+button.piu{
+  min-width:52px;justify-content:center;padding:5px 18px;
+  font-size:18px;line-height:1.15;font-weight:640;
+}
+
+/* Il riquadro «Aspetto delle scritte» (menu Sviluppatore): una riga per voce,
+   con il suo nome, come si chiama sul foglio, quanto è grande, se va in
+   maiuscolo e se è in grassetto. */
+.aspetto{display:flex;flex-direction:column;gap:5px}
+.asprow{
+  display:grid;gap:8px;align-items:center;
+  grid-template-columns:minmax(110px,1.3fr) minmax(105px,1.5fr) 74px 124px 116px;
+}
+.asprow .nome{font-size:12.5px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis}
+.asprow input,.asprow select{
+  width:100%;padding:4px 7px;font-family:inherit;font-size:12.5px;
+  background:var(--surface-1);color:var(--ink-1);
+  border:1px solid var(--border);border-radius:7px;
+}
+.asprow input:focus,.asprow select:focus{outline:2px solid var(--accent);outline-offset:-1px}
+/* dove il testo lo scrive l'utente nel preventivo la casella resta lì, ma spenta:
+   togliendola le colonne si disallineerebbero da una riga all'altra */
+.asprow input:disabled{background:transparent;border-color:transparent;color:var(--ink-3);text-align:center}
+.asprow.testata{
+  font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-3);
+  padding-bottom:5px;border-bottom:1px solid var(--border);margin-bottom:3px;
+}
+.asprow.testata .nome{font-size:11px;color:inherit}
+.aspgruppo{
+  margin-top:12px;font-size:11.5px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.05em;color:var(--ink-3);
+}
+
+/* ============================================================
+   TOTALI IN FONDO AL PREVENTIVO
+   ============================================================ */
+/* Il riquadro dei totali e, sotto, il tasto del prezzo concordato. */
+.totalibox{
+  margin-top:12px;margin-left:auto;width:min(520px,100%);
+  display:flex;flex-direction:column;gap:8px;
+}
+.totali{
+  display:flex;flex-direction:column;gap:0;
+  border:1px solid var(--border);border-radius:8px;overflow:hidden;
+}
+.totali .rt{
+  display:flex;justify-content:space-between;align-items:baseline;gap:14px;
+  padding:7px 12px;font-size:var(--t-tot-v);border-bottom:1px solid var(--grid);
+}
+.totali .rt:last-child{border-bottom:0}
+.totali .rt .k{color:var(--ink-2);font-weight:560;text-transform:uppercase;letter-spacing:.04em;font-size:var(--t-tot-k)}
+/* «Imponibile totale», «IVA TOTALE» e lo sconto sono conti di passaggio: restano
+   maiuscoli e della stessa grandezza, ma senza grassetto, etichetta e cifra.
+   Il neretto lo tiene la riga che chiude il conto: «Totale ivato», o «Prezzo
+   concordato» quando c'è. */
+.totali .rt.riepilogo .k,.totali .rt.riepilogo .v{font-weight:400}
+.totali .rt .v{font-variant-numeric:tabular-nums;font-weight:640}
+.totali .rt.finale{background:var(--plane);border-top:2px solid var(--axis)}
+.totali .rt.finale .k{color:var(--ink-1);font-weight:680;font-size:var(--t-fin-k)}
+.totali .rt.finale .v{font-size:var(--t-fin-v);font-weight:700;letter-spacing:-.01em}
+
+/* Sconto e prezzo concordato */
+/* «.rt» è flex, e da solo vincerebbe sul display:none di [hidden] */
+.totali .rt[hidden]{display:none}
+.totali .rt.sconto .v{color:var(--good-text)}
+.totali .rt.concordato .v{display:flex;align-items:center;gap:3px}
+.totali .rt.concordato input{
+  width:130px;text-align:right;font-variant-numeric:tabular-nums;
+  font-size:17px;font-weight:700;letter-spacing:-.01em;padding:2px 8px;
+  border:1px solid var(--border-strong);background:var(--surface-1);border-radius:6px;
+}
+.totali .rt.concordato input:focus{outline:2px solid var(--accent);outline-offset:-1px}
+/* l'euro sta accanto all'importo, non nell'etichetta */
+.totali .rt.concordato .eu{font-size:15px;font-weight:700;color:var(--ink-2)}
+.totali .rt.concordato .x{
+  border:0;background:transparent;color:var(--ink-3);
+  padding:2px 3px;font-size:15px;line-height:1;
+}
+.totali .rt.concordato .x:hover{color:var(--critical);background:transparent}
+/* Il tasto sta dentro il riquadro, subito sotto il totale ivato: è lì che
+   prenderebbe posto il prezzo concordato, e lì lo si va a cercare. */
+.totali .rt.azioneconc{justify-content:center;padding:7px 10px}
+button.conc{justify-content:center;font-size:12.5px;padding:5px 12px}
+button#btnAcconto{align-self:center}
+.notaconc{font-size:11px;color:var(--ink-3);text-align:right;line-height:1.4;margin-top:-2px}
+.notaconc.avviso{color:#8a5c00}
+:root[data-theme="dark"] .notaconc.avviso{color:var(--warning)}
+
+/* Rate e acconti: nome e percentuale si scrivono, l'importo si legge */
+.acconti{display:flex;flex-direction:column;border-top:2px solid var(--axis)}
+.totali .rt.acconto{gap:8px;padding:5px 6px 5px 12px}
+.rt.acconto .nome{
+  flex:1;min-width:0;font-size:var(--t-rata-k);font-weight:600;letter-spacing:.02em;
+  text-transform:uppercase;color:var(--ink-2);
+  border:1px solid transparent;background:transparent;padding:3px 5px;border-radius:6px;
+}
+.rt.acconto .nome:hover{border-color:var(--border-strong);background:var(--surface-1)}
+.rt.acconto .nome:focus{background:var(--surface-1);text-transform:none}
+/* La percentuale si legge quanto l'importo che le sta accanto: stessa misura,
+   segno «%» compreso. Il riquadro è largo abbastanza per i decimali di una
+   quota ripartita («35,29»), che il ricalcolo automatico produce spesso. */
+.rt.acconto .pc{
+  flex:0 0 auto;display:inline-flex;align-items:center;gap:1px;
+  font-size:var(--t-rata-p);color:var(--ink-2);
+}
+.rt.acconto .perc{
+  width:54px;text-align:right;font-variant-numeric:tabular-nums;font-size:var(--t-rata-p);
+  border:1px solid var(--border-strong);background:var(--surface-1);
+  padding:2px 5px;border-radius:6px;
+}
+.rt.acconto .v{
+  flex:0 0 auto;min-width:96px;text-align:right;
+  font-variant-numeric:tabular-nums;font-weight:640;font-size:var(--t-rata-v);
+}
+.rt.acconto .x{
+  flex:0 0 auto;border:0;background:transparent;color:var(--ink-3);
+  padding:2px 3px;font-size:14px;line-height:1;opacity:0;
+}
+.rt.acconto:hover .x,.rt.acconto .x:focus{opacity:1}
+.rt.acconto .x:hover{color:var(--critical);background:transparent}
+
+/* ============================================================
+   MODALE
+   ============================================================ */
+.ov{
+  position:fixed;inset:0;background:rgba(11,11,11,.5);display:grid;place-items:center;
+  z-index:100;padding:20px;backdrop-filter:blur(2px);
+}
+.ov[hidden]{display:none}
+.modal{
+  background:var(--surface-1);border:1px solid var(--border);border-radius:14px;
+  box-shadow:0 20px 60px rgba(0,0,0,.35);width:min(560px,100%);max-height:90vh;
+  display:flex;flex-direction:column;
+}
+.modal.wide{width:min(900px,100%)}
+.modal h3{
+  margin:0;padding:15px 18px;font-size:15px;border-bottom:1px solid var(--border);
+  flex:0 0 auto;display:flex;align-items:center;gap:10px;
+}
+/* la «x» sta a sinistra del titolo, dove è stata chiesta */
+.modal h3 .chiudix{
+  flex:0 0 auto;width:26px;height:26px;padding:0;justify-content:center;
+  font-size:17px;line-height:1;color:var(--ink-2);
+  border-color:var(--border);background:var(--surface-1);
+}
+.modal h3 .chiudix:hover{color:var(--critical);border-color:var(--critical)}
+/* Dove la finestra è larga e piena di comandi, la crocetta sta in alto a
+   destra: è l'angolo in cui la si cerca, lontano dai campi da compilare. */
+.modal.xdx h3 .chiudix{order:2;margin-left:auto}
+.modal .body{padding:18px;overflow:auto;flex:1 1 auto}
+.modal .foot{
+  padding:12px 18px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;
+  background:var(--plane);border-radius:0 0 14px 14px;flex:0 0 auto;
+}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+/* percorsi delle cartelle: lunghi, si spezzano dove capita ma si leggono */
+.cartelle{display:flex;flex-direction:column;gap:8px}
+.cartriga{display:flex;flex-direction:column;gap:2px}
+.cartriga .k{font-size:11.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.04em;font-weight:620}
+/* elenco dei preventivi recenti */
+.recenti{display:flex;flex-direction:column;gap:6px}
+.recenti .rec{
+  display:flex;flex-direction:column;align-items:flex-start;gap:1px;
+  width:100%;text-align:left;padding:9px 11px;border-radius:9px;
+}
+.recenti .rec .n{font-weight:640;font-size:13.5px}
+.recenti .rec .q{font-size:11.5px;color:var(--ink-2)}
+.recenti .rec .p{font-size:11px;color:var(--ink-3);word-break:break-all}
+.cartriga .v{
+  font-size:12.5px;word-break:break-all;background:var(--plane);
+  border:1px solid var(--border);border-radius:7px;padding:6px 9px;
+}
+.hint{font-size:12px;color:var(--ink-3);margin-top:8px;line-height:1.5}
+textarea.grande{
+  width:100%;min-height:300px;resize:vertical;line-height:1.55;font-size:14px;
+  white-space:pre-wrap;
+}
+
+/* ============================================================
+   EDITOR DELL'INTESTAZIONE
+   ============================================================ */
+.editbar{
+  display:flex;flex-wrap:wrap;gap:5px;align-items:center;padding:8px;margin-bottom:10px;
+  background:var(--plane);border:1px solid var(--border);border-radius:9px;
+}
+.editbar .gr{display:flex;gap:2px;align-items:center}
+.editbar .gr + .gr{border-left:1px solid var(--border);padding-left:6px;margin-left:2px}
+.editbar select{font-size:12px;padding:4px 6px;border-radius:6px}
+.editbar select.fam{width:132px}
+.editbar select.dim{width:64px}
+.editbar button{
+  min-width:29px;justify-content:center;padding:4px 7px;font-size:13px;
+  border-color:var(--border);background:var(--surface-1);
+}
+.editbar button.b{font-weight:800}
+.editbar button.i{font-style:italic}
+.editbar button.u{text-decoration:underline}
+/* premuto: il pulsante resta acceso finché la scrittura in quel punto è in
+   grassetto, in corsivo, allineata così — come la barra di Excel */
+.editbar button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.editbar button.on:hover{background:var(--seq-500);border-color:var(--seq-500)}
+.editbar input[type=color]{
+  width:30px;height:27px;padding:1px;border-radius:6px;border:1px solid var(--border);
+  background:var(--surface-1);cursor:pointer;
+}
+.editor{
+  border:1px solid var(--border-strong);border-radius:9px;background:#fff;color:#000;
+  padding:14px 16px;min-height:190px;max-height:46vh;overflow:auto;
+  font-family:Arial,Helvetica,sans-serif;font-size:var(--t-intest);line-height:1.4;
+}
+.editor:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.editor:empty::before{content:attr(data-vuoto);color:#9a9a9a}
+
+/* le intestazioni salvate: elenco, carica, salva, elimina */
+.intestgest{display:flex;gap:8px;align-items:flex-end;margin-top:10px;flex-wrap:wrap}
+.intestgest .fld.grow{flex:1;min-width:200px}
+.intestgest select,.intestgest input{width:100%}
+.intestgest button{height:31px;flex:0 0 auto}
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+#toasts{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:200}
+.toast{
+  background:var(--surface-1);border:1px solid var(--border-strong);border-left:3px solid var(--accent);
+  border-radius:9px;padding:10px 14px;box-shadow:var(--shadow);font-size:13px;max-width:360px;
+  animation:tin .18s ease;display:flex;align-items:center;gap:10px;
+}
+.toast.err{border-left-color:var(--critical)}
+.toast.ok{border-left-color:var(--good)}
+.toast button{padding:3px 9px;font-size:12px}
+@keyframes tin{from{opacity:0;transform:translateY(8px)}}
+
+/* ==============================================================================
+   IL PREVENTIVO STAMPATO
+   Esiste solo sulla carta (e nel PDF): a schermo resta nascosto. Intestazione e
+   dati del cliente compaiono qui, non nella pagina di lavoro.
+   Nessun fondino colorato, righe sottili, nero su bianco: la cartuccia dura.
+   ============================================================================== */
+#stampa{display:none}
+
+@media print{
+  /* L'ingrandimento dell'interfaccia (lo «zoom» sulla radice, che su uno
+     schermo grande arriva a 1,15 o 1,60) serve a leggere meglio a video: sulla
+     carta NON deve entrarci. Ci entrava: il testo usciva del 15% più grande e
+     la tabella misurava 216mm su un'area stampabile di 188, quindi la stampa
+     non corrispondeva a quello che si vede nell'app. Lo zoom è scritto
+     direttamente sull'elemento, e per questo qui ci vuole «!important». */
+  html{zoom:1!important}
+  html,body{height:auto;background:#fff;color:#000}
+  body{display:block;margin:0;font-size:var(--t-cella)}
+  header.app,.tabbar,main,#toasts,.ov,.noprint,#fileInput{display:none!important}
+  /* Stesso carattere dello schermo, non solo stessa misura: due famiglie
+     diverse alla stessa misura si vedono comunque diverse, e le parole delle
+     testate andrebbero a capo in punti diversi. L'intestazione fa eccezione,
+     perché si scrive nel suo editor, che è in Arial. */
+  #stampa{display:block;color:#000;font-family:var(--font);font-size:var(--t-cella);line-height:1.45}
+
+  /* Stessa misura di base dell'editor (.editor): il testo a cui non è stata
+     data una dimensione deve stampare com'è stato scritto, non più piccolo. */
+  /* più sezioni in un documento solo: ognuna comincia su una pagina nuova */
+  .st-sezione.salta{break-after:page;page-break-after:always}
+  .st-head{margin:0 0 6mm;font-family:Arial,Helvetica,sans-serif;font-size:var(--t-intest);line-height:1.4}
+  .st-head *{max-width:100%}
+  .st-head img{max-height:28mm;object-fit:contain}
+
+  /* In cima, affiancati: l'intestazione a sinistra, i dati del cliente a destra.
+     Uno sotto l'altro costavano due centimetri di foglio per niente. */
+  .st-alto{
+    display:flex;justify-content:space-between;align-items:flex-start;gap:7mm;
+    margin:0 0 3.5mm;padding-bottom:3mm;border-bottom:.6pt solid #000;
+  }
+  .st-alto .st-head{flex:1 1 auto;min-width:0}
+  .st-alto .st-cliente{flex:0 1 auto;max-width:52%}
+
+  /* Il nome della sezione e, alla sua altezza, la data. */
+  .st-riga-sezione{
+    display:flex;justify-content:space-between;align-items:baseline;gap:6mm;
+    margin:0 0 2.5mm;
+  }
+  .st-riga-sezione .st-sezione-nome{margin:0}
+  .st-riga-sezione .st-data{flex:0 0 auto}
+  /* Etichette e valori incolonnati: «display:contents» scioglie la riga così
+     che etichetta e valore diventino due colonne della stessa griglia, e i
+     valori partano tutti dallo stesso punto. */
+  .st-cliente{
+    display:grid;grid-template-columns:auto minmax(0,1fr);
+    column-gap:2.5mm;row-gap:.5mm;align-items:baseline;
+    font-size:var(--t-cliente);line-height:1.4;
+  }
+  .st-cliente .r{display:contents}
+  .st-cliente .k{font-weight:700;white-space:nowrap}
+  .st-cliente .v{word-break:break-word}
+  .st-data{font-size:var(--t-cliente);text-align:right;white-space:nowrap}
+  .st-data .k{font-weight:700;margin-right:2mm}
+
+  .st-sezione-nome{font-size:var(--t-sezione);font-weight:700;letter-spacing:.03em;margin:0 0 2.5mm}
+
+  table.st-tab{width:100%;border-collapse:collapse;table-layout:fixed;font-size:var(--t-cella)}
+  /* «display:table-header-group» è ciò che ricopia ARTICOLO / DESCRIZIONE /
+     PREZZO UNITARIO / QUANTITÀ / IMPONIBILE / IVA / TOTALE in cima a ogni
+     pagina nuova, senza doverlo scrivere due volte. */
+  table.st-tab thead{display:table-header-group}
+  /* Testate e celle con la misura e l'imbottitura dello schermo: sulla carta
+     la tabella è larga quanto quella dell'app (vedi «--stampabile»), quindi le
+     stesse cifre danno lo stesso risultato. Il ripiego a capo resta, per la
+     parola che non ci stesse comunque — meglio spezzata che sovrapposta. */
+  table.st-tab th{
+    text-align:left;font-weight:700;font-size:var(--t-testata);text-transform:uppercase;
+    letter-spacing:.02em;line-height:1.25;
+    padding:8px 6px;border-bottom:1pt solid #000;border-top:.6pt solid #000;
+    background:transparent;overflow-wrap:break-word;
+  }
+  table.st-tab td{
+    padding:7px 11px;border-bottom:.4pt solid #b8b8b8;vertical-align:middle;
+    word-wrap:break-word;overflow-wrap:break-word;
+  }
+  table.st-tab th.num,table.st-tab td.num{text-align:right}
+  table.st-tab td.desc{white-space:pre-wrap}
+  /* Promo: due righe dentro la stessa cella — sopra il prezzo di prima
+     sbarrato, sotto quello promozionale */
+  table.st-tab tr.conpromo td{vertical-align:top}
+  /* quel che vale per tutte e due le righe sta in mezzo, e non si sbarra */
+  table.st-tab tr.conpromo td.art,
+  table.st-tab tr.conpromo td.desc,
+  table.st-tab tr.conpromo td.mezzo{vertical-align:middle;text-decoration:none}
+  table.st-tab .orig,
+  table.st-tab .pro{display:block;height:auto;line-height:1.4;font-size:var(--t-cella);padding:0;margin:0}
+  table.st-tab .orig{text-decoration:line-through;color:#777}
+  table.st-tab .pro{font-weight:400}
+  table.st-tab tr{break-inside:avoid;page-break-inside:avoid}
+
+  /* IMPONIBILE TOTALE / IVA / TOTALE IVATO restano uniti: se non entrano in
+     fondo alla pagina scendono tutti insieme a quella dopo — dove l'intestazione
+     della tabella è già stata ricopiata. */
+  tbody.st-totali{break-inside:avoid;page-break-inside:avoid}
+  tbody.st-totali td{border-bottom:0;padding-top:2mm}
+  tbody.st-totali tr:first-child td{padding-top:3mm}
+  tbody.st-totali .k{text-align:right;font-weight:700;font-size:var(--t-tot-k);text-transform:uppercase;letter-spacing:.04em}
+  tbody.st-totali .v{text-align:right;font-weight:700;font-size:var(--t-tot-v);border-bottom:.4pt solid #000;white-space:nowrap}
+  tbody.st-totali tr.riepilogo .k,tbody.st-totali tr.riepilogo .v{font-weight:400}
+  tbody.st-totali tr.finale .k{font-size:var(--t-fin-k)}
+  tbody.st-totali tr.finale .v{font-size:var(--t-fin-v);border-top:1pt solid #000;border-bottom:1.6pt double #000}
+
+  /* Rate e acconti: le condizioni di pagamento, staccate dai totali */
+  tbody.st-totali tr.acconto .k{text-align:left;font-size:var(--t-rata-k);letter-spacing:.02em}
+  tbody.st-totali tr.acconto .pc{text-align:right;font-weight:700;font-size:var(--t-rata-p);padding-right:2mm}
+  tbody.st-totali tr.acconto .v{font-size:var(--t-rata-v);border-bottom:.4pt solid #b8b8b8}
+  tbody.st-totali tr.acconto.primo td{padding-top:5mm}
+  tbody.st-totali tr.acconto.primo .k,
+  tbody.st-totali tr.acconto.primo .pc,
+  tbody.st-totali tr.acconto.primo .v{border-top:.6pt solid #000}
+
+  .st-vuoto{padding:10mm 0;text-align:center;font-size:var(--t-cella);color:#555}
+}
+
+/* ============================================================
+   SCHERMI PICCOLI
+   ============================================================ */
+@media (max-width:700px){
+  .grid2{grid-template-columns:1fr}
+  main{padding:12px 10px 50px}
+  .foglio{padding:8px}
+}
