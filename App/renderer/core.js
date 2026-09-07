@@ -745,7 +745,7 @@ function vistaPreventivo(){
   const conTab = complessivo && !sempl;      // la colonna della sezione
 
   return `
-  <div class="barra noprint">
+  <div class="barra noprint${complessivo?'':' centrata'}">
     ${complessivo?`<label class="btn spuntabarra" title="Al posto di tutte le voci mostra una riga per sezione, con il suo totale. I conti non cambiano.">
       <input type="checkbox" id="chkSemplice"${S.semplificato?' checked':''}>
       <span>Preventivo Complessivo Semplificato</span>

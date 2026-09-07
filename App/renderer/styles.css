@@ -232,6 +232,11 @@ main{flex:1;overflow:auto;padding:16px 16px 60px}
    riga, ed è il caso raro della finestra stretta — la riga resta intera */
 .barra::-webkit-scrollbar{height:0}
 .barra > *{flex:0 0 auto}
+/* Nelle sezioni la spunta del complessivo semplificato non c'è, e i comandi
+   riempiono meno della barra: lasciandoli partire da sinistra sembrano buttati
+   in un angolo. Lì si centrano. Nel complessivo, dove la spunta li porta quasi
+   a filo, restano dove sono. */
+.barra.centrata{justify-content:center}
 .barra button{padding:6px 9px}
 .barra .segbtns button{padding:5px 9px}
 .barra .sep{width:1px;align-self:stretch;background:var(--border);margin:2px 2px}
