@@ -40,7 +40,7 @@
   --t-testata:11px;    /* ARTICOLO, DESCRIZIONE, … */
   --t-tot-k:13px;      /* IMPONIBILE TOTALE, IVA TOTALE */
   --t-tot-v:12.5px;    /* i loro importi */
-  --t-fin-k:14px;      /* TOTALE IVATO */
+  --t-fin-k:14px;      /* TOTALE */
   --t-fin-v:18px;      /* il suo importo */
   --t-rata-k:11.5px;   /* ACCONTO ALLA CONFERMA D'ORDINE */
   --t-rata-p:13px;     /* la percentuale della rata */
@@ -491,7 +491,7 @@ button.piu{
 .totali .rt .k{color:var(--ink-2);font-weight:560;text-transform:uppercase;letter-spacing:.04em;font-size:var(--t-tot-k)}
 /* «Imponibile totale», «IVA TOTALE» e lo sconto sono conti di passaggio: restano
    maiuscoli e della stessa grandezza, ma senza grassetto, etichetta e cifra.
-   Il neretto lo tiene la riga che chiude il conto: «Totale ivato», o «Prezzo
+   Il neretto lo tiene la riga che chiude il conto: «Totale», o «Prezzo
    concordato» quando c'è. */
 .totali .rt.riepilogo .k,.totali .rt.riepilogo .v{font-weight:400}
 .totali .rt .v{font-variant-numeric:tabular-nums;font-weight:640}
@@ -790,7 +790,7 @@ textarea.grande{
   table.st-tab .pro{font-weight:400}
   table.st-tab tr{break-inside:avoid;page-break-inside:avoid}
 
-  /* IMPONIBILE TOTALE / IVA / TOTALE IVATO restano uniti: se non entrano in
+  /* IMPONIBILE TOTALE / IVA / TOTALE restano uniti: se non entrano in
      fondo alla pagina scendono tutti insieme a quella dopo — dove l'intestazione
      della tabella è già stata ricopiata. */
   tbody.st-totali{break-inside:avoid;page-break-inside:avoid}

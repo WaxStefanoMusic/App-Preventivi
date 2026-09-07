@@ -459,7 +459,7 @@ const VOCI=[
    sel:['.totali .rt.v-iva .k'],stampa:['tbody.st-totali tr.v-iva .k']},
   {id:'ivaImporto',nome:'… il suo importo',dim:'--t-tot-v',
    sel:['.totali .rt.v-iva .v'],stampa:['tbody.st-totali tr.v-iva .v']},
-  {id:'ivato',nome:'TOTALE IVATO',testo:'TOTALE IVATO',dim:'--t-fin-k',
+  {id:'ivato',nome:'TOTALE',testo:'TOTALE',dim:'--t-fin-k',
    sel:['.totali .rt.v-ivato .k'],stampa:['tbody.st-totali tr.v-ivato .k']},
   {id:'ivatoImporto',nome:'… il suo importo',dim:'--t-fin-v',
    sel:['.totali .rt.v-ivato .v'],stampa:['tbody.st-totali tr.v-ivato .v']},
@@ -889,7 +889,7 @@ function totaliHTML(T){
     <div class="totali">
       <div class="rt riepilogo v-imponibile"><span class="k">${esc(voceTesto('imponibile','IMPONIBILE TOTALE'))}</span><span class="v">${fmtEur(T.imponibile)}</span></div>
       <div class="rt riepilogo v-iva"><span class="k">${esc(etichettaIva(T))}</span><span class="v">${fmtEur(T.iva)}</span></div>
-      <div class="rt v-ivato${attivo?'':' finale'}"><span class="k">${esc(voceTesto('ivato','TOTALE IVATO'))}</span><span class="v">${fmtEur(T.totale)}</span></div>
+      <div class="rt v-ivato${attivo?'':' finale'}"><span class="k">${esc(voceTesto('ivato','TOTALE'))}</span><span class="v">${fmtEur(T.totale)}</span></div>
       ${attivo?'':`<div class="rt azioneconc">
         <button id="btnConcordato" class="conc">＋ Aggiungi Prezzo Concordato</button>
       </div>`}
@@ -1997,7 +1997,7 @@ function foglioStampaHTML(tabId){
       <tbody class="st-totali">
         <tr class="riepilogo v-imponibile"><td class="k" colspan="5">${esc(voceTesto('imponibile','IMPONIBILE TOTALE'))}</td><td class="v" colspan="2">${fmtEur(T.imponibile)}</td></tr>
         <tr class="riepilogo v-iva"><td class="k" colspan="5">${esc(etichettaIva(T))}</td><td class="v" colspan="2">${fmtEur(T.iva)}</td></tr>
-        <tr class="v-ivato${conc?'':' finale'}"><td class="k" colspan="5">${esc(voceTesto('ivato','TOTALE IVATO'))}</td><td class="v" colspan="2">${fmtEur(T.totale)}</td></tr>
+        <tr class="v-ivato${conc?'':' finale'}"><td class="k" colspan="5">${esc(voceTesto('ivato','TOTALE'))}</td><td class="v" colspan="2">${fmtEur(T.totale)}</td></tr>
         ${conc?`<tr class="riepilogo v-sconto"><td class="k" colspan="5">${esc(etichettaSconto(conc))}</td><td class="v" colspan="2">${fmtEur(conc.sconto)}</td></tr>
         <tr class="finale v-concordato"><td class="k" colspan="5">${esc(voceTesto('concordato','PREZZO CONCORDATO'))}</td><td class="v" colspan="2">${fmtEur(conc.prezzo)}</td></tr>`:''}
         ${S.acconti.map((a,i)=>`<tr class="acconto v-rata${i===0?' primo':''}">
@@ -2463,7 +2463,7 @@ function foglioXlsx(tabId,primo){
   add(eti(etichettaIva(T),19),
       cIsole ? cellaForm(6,r,`SUMPRODUCT(${gamma(4)},${gamma(5)})/100`,T.iva,26) : cellaNum(6,r,0,26)); r++;
   const rIvato=r;
-  add(eti('TOTALE IVATO',conc?19:21),
+  add(eti(voceTesto('ivato','TOTALE'),conc?19:21),
       cellaForm(6,r,`${RIF(6,rImponibile)}+${RIF(6,rIva)}`,T.totale,conc?26:27)); r++;
 
   let rBase=rIvato;                       // la cifra su cui si calcolano le rate

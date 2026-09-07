@@ -68,7 +68,7 @@ sinistra, la data a destra. La data si scrive di seguito — `10082026` diventa
 
 **Prezzo concordato.** Sotto ai totali c'è `＋ Aggiungi Prezzo Concordato`.
 Premendolo compare la riga in cui scrivere il prezzo pattuito con il cliente; da
-quel momento, fra `TOTALE IVATO` e `PREZZO CONCORDATO`, si aggiunge da sola la
+quel momento, fra `TOTALE` e `PREZZO CONCORDATO`, si aggiunge da sola la
 riga **SCONTO** con la differenza e la percentuale. Le due righe finiscono anche
 in stampa, nel PDF e nell'Excel, e lì la cifra che chiude il conto diventa il
 prezzo concordato. Il `×` accanto al prezzo lo toglie e tutto torna com'era.
@@ -88,7 +88,7 @@ concordato: le quote delle sezioni sommano al centesimo la rata del complessivo.
 il foglio a schermo è già largo quanto quello che uscirà. Quando le voci non
 stanno in una pagina, la riga ARTICOLO · DESCRIZIONE · PREZZO UNITARIO €
 · QUANTITÀ · IMPONIBILE € · IVA % · TOTALE viene ricopiata in cima alla pagina
-nuova, e IMPONIBILE TOTALE € · IVA TOTALE · TOTALE IVATO restano uniti: se non
+nuova, e IMPONIBILE TOTALE € · IVA TOTALE · TOTALE restano uniti: se non
 entrano in fondo, scendono insieme alla pagina dopo. Niente fondini colorati,
 righe sottili, nero su bianco: la cartuccia dura.
 
@@ -118,7 +118,7 @@ vero, con la tabella tutta incorniciata e — soprattutto — **le formule dentr
 | Totale € | `=imponibile × (1 + IVA/100)` |
 | Imponibile totale | `=SOMMA(...)` della colonna |
 | IVA totale | `=MATR.SOMMA.PRODOTTO(imponibili; aliquote)/100` |
-| Totale ivato | `=imponibile totale + IVA` |
+| Totale | `=imponibile totale + IVA` |
 | Sconto | `=totale ivato − prezzo concordato` |
 | Rate | `=base × percentuale/100` |
 
