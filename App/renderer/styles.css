@@ -506,6 +506,26 @@ button#btnAcconto{align-self:center}
   flex:0 0 auto;min-width:96px;text-align:right;
   font-variant-numeric:tabular-nums;font-weight:640;font-size:var(--t-rata-v);
 }
+/* Nelle sezioni l'importo della rata si SCRIVE: capita più spesso di pattuire
+   una cifra tonda che una percentuale. Nel complessivo no: lì è la somma delle
+   sezioni, e si cambia andando nella sezione che la determina. */
+.rt.acconto .v.scrivi{display:flex;align-items:center;justify-content:flex-end;gap:3px}
+.rt.acconto .v input.imp{
+  width:104px;text-align:right;font-variant-numeric:tabular-nums;
+  font-size:var(--t-rata-v);font-weight:640;color:var(--ink-1);
+  border:1px solid var(--border-strong);background:var(--surface-1);
+  padding:2px 5px;border-radius:6px;
+}
+.rt.acconto .v input.imp:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.rt.acconto .v .eu{font-size:var(--t-rata-v);font-weight:640;color:var(--ink-2)}
+/* la rata decisa a mano in questa sezione si riconosce a colpo d'occhio */
+.rt.acconto.ritoccata .perc{border-color:var(--accent)}
+.notaconc.mano{display:flex;align-items:center;justify-content:flex-end;gap:7px}
+.notaconc .rimetti{
+  font-size:11px;padding:1px 8px;border-radius:6px;
+  border:1px solid var(--border);background:var(--surface-1);color:var(--ink-2);
+}
+.notaconc .rimetti:hover{border-color:var(--border-strong);color:var(--ink-1)}
 .rt.acconto .x{
   flex:0 0 auto;border:0;background:transparent;color:var(--ink-3);
   padding:2px 3px;font-size:14px;line-height:1;opacity:0;
