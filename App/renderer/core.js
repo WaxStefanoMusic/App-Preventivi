@@ -1043,12 +1043,17 @@ function normalizzaIn(tabId){
   });
 }
 
-/** riporta nei campi le percentuali ricalcolate, tranne quello in cui si scrive */
+/* Riporta nei campi le percentuali ricalcolate, tranne quello in cui si sta
+   scrivendo. Va scritta quella della SEZIONE APERTA: prendendo la predefinita,
+   digitando l'importo di un acconto in una sezione il campo della percentuale
+   veniva riportato al 50% a ogni tasto, e sembrava che l'app non tenesse dietro. */
 function riscriviPercentuali(escluso){
   $$('#riquadroTotali .rt.acconto').forEach(el=>{
     const a=S.acconti[+el.dataset.i]; if(!a) return;
     const inp=el.querySelector('.perc');
-    if(inp && inp!==escluso && inp.value!==a.perc) inp.value=a.perc;
+    if(!inp || inp===escluso) return;
+    const valore=percMostrata(a,S.active);
+    if(inp.value!==valore) inp.value=valore;
   });
 }
 
