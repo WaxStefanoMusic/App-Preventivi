@@ -224,6 +224,14 @@ main{flex:1;overflow:auto;padding:16px 16px 60px}
   max-width:min(100%,1180px);
 }
 .barra .sep{width:1px;align-self:stretch;background:var(--border);margin:2px 2px}
+/* La spunta del complessivo semplificato: prima di tutto il resto, contro il
+   bordo sinistro, perché cambia che cosa si sta guardando. */
+.barra .spuntabarra{
+  display:flex;align-items:center;gap:7px;cursor:pointer;
+  font-size:12.5px;font-weight:560;color:var(--ink-2);padding:3px 8px 3px 0;
+}
+.barra .spuntabarra:hover{color:var(--ink-1)}
+.barra .spuntabarra input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer;margin:0}
 .barra .campo-data{display:flex;align-items:center;gap:6px}
 .barra .campo-data span{font-size:12px;color:var(--ink-2);font-weight:560}
 .barra select#ambito{font-size:12.5px;padding:5px 8px}
@@ -321,6 +329,11 @@ button.vaitab{
 button.vaitab .i{flex:0 0 auto;opacity:.85}
 button.vaitab .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 button.vaitab:hover{background:var(--surface-1);border-color:var(--accent);color:var(--accent)}
+/* Nel complessivo semplificato il nome della sezione prende il posto
+   dell'articolo: si legge come una voce, e cliccandolo si va dov'è nata. */
+button.vaitab.grande{font-size:var(--t-cella);color:var(--ink-1);font-weight:560;padding:5px 6px}
+tr.semplice td{background:var(--plane)}
+tr.semplice td.calc{color:var(--ink-1)}
 
 /* Promo: la riga va a capo dentro se stessa. Sopra il prezzo di prima,
    sbarrato ma con i suoi conti; sotto quello promo, che è quello che conta. */

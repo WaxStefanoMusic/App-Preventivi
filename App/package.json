@@ -1,6 +1,6 @@
 {
   "name": "app-preventivi",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "App Preventivi — creazione, stampa ed esportazione di preventivi in formato A4",
   "main": "main.js",
   "author": "Mattew",

@@ -89,6 +89,9 @@ const NUOVO = () => ({
     {id:uid(), nome:"ACCONTO ALLA CONFERMA D'ORDINE", perc:'50'},
     {id:uid(), nome:'RIMANENTE A LAVORI CONCLUSI',    perc:'50'},
   ],
+  /* Complessivo semplificato: al posto di tutte le voci, una riga per
+     sezione. È una scelta di QUESTO preventivo, quindi va nel file. */
+  semplificato:false,
   active:null,                                // impostato subito dopo
 });
 
@@ -296,6 +299,25 @@ function ripartisciConcordato(){
       : cent(totali(righeDi(t.id)).totale*obiettivo/totaleGen);
     if(i<sezioni.length-1) dato=cent(dato+quota);
     S.concordati[t.id]=fmtNum(quota);
+  });
+}
+
+/* ------------------------------------------------------------------
+   Complessivo semplificato
+   Una riga per sezione: il suo nome al posto degli articoli, e i suoi conti
+   già fatti. I totali in fondo NON cambiano — la somma delle sezioni è la
+   stessa che veniva dalle voci — cambia solo quanto si mostra di come ci si
+   arriva: un preventivo che dice «Cucina, Complementi, Posa» e basta.
+   L'aliquota c'è solo se in quella sezione è una sola: con voci al 22 e al 10
+   una percentuale unica sarebbe falsa.
+   ------------------------------------------------------------------ */
+const semplificato = tabId => !!S.semplificato && tabId===ID_TOT;
+function righeSemplificate(){
+  return tabVoci().map(t=>{
+    const T=totali(righeDi(t.id));
+    return {tabId:t.id, nome:t.name||'Sezione', icona:t.icon||'📄',
+            imponibile:T.imponibile, totale:T.totale,
+            aliquota: T.aliquote.length===1 ? T.aliquote[0] : null};
   });
 }
 
@@ -719,9 +741,15 @@ function vistaPreventivo(){
   const righe=righeDi(t.id);
   const T=totali(righe);
   const complessivo = t.id===ID_TOT;
+  const sempl = semplificato(t.id);
+  const conTab = complessivo && !sempl;      // la colonna della sezione
 
   return `
   <div class="barra noprint">
+    ${complessivo?`<label class="spuntabarra" title="Al posto di tutte le voci mostra una riga per sezione, con il suo totale. I conti non cambiano.">
+      <input type="checkbox" id="chkSemplice"${S.semplificato?' checked':''}>
+      <span>Preventivo Complessivo Semplificato</span>
+    </label>`:''}
     <button id="btnIntest" title="Compare in cima al preventivo stampato">🖊 Intestazione</button>
     <button id="btnCliente" title="Compare nel preventivo stampato, sotto l'intestazione">👤 Dati Cliente</button>
     <div class="campo-data">
@@ -748,14 +776,14 @@ function vistaPreventivo(){
            nell'esportazione non compare, perché il foglio stampato viene
            costruito a parte (vedi costruisciStampa) e lì di colonne ce ne sono
            sette, quelle chieste. -->
-      <table class="voci${complessivo?' con-tab':''}">
+      <table class="voci${conTab?' con-tab':''}">
         <colgroup>
-          ${complessivo?'<col class="c-tab">':''}
+          ${conTab?'<col class="c-tab">':''}
           <col class="c-art"><col class="c-desc"><col class="c-prezzo"><col class="c-qta">
           <col class="c-imp"><col class="c-iva"><col class="c-tot"><col class="c-az">
         </colgroup>
         <thead><tr>
-          ${complessivo?'<th title="Sezione da cui arriva la riga">TAB</th>':''}
+          ${conTab?'<th title="Sezione da cui arriva la riga">TAB</th>':''}
           <th>Articolo</th>
           <th>Descrizione</th>
           <th class="num">Prezzo unitario&nbsp;€</th>
@@ -766,15 +794,19 @@ function vistaPreventivo(){
           <th></th>
         </tr></thead>
         <tbody id="corpo">
-          ${righe.length?righe.map(r=>rigaHTML(r,complessivo)).join(''):
-            `<tr><td colspan="${complessivo?9:8}" class="rigavuota">Nessuna voce. Premi «＋» qui sotto per iniziare.</td></tr>`}
+          ${sempl
+            ? (righeSemplificate().length
+                ? righeSemplificate().map(rigaSempliceHTML).join('')
+                : `<tr><td colspan="8" class="rigavuota">Nessuna sezione da riassumere.</td></tr>`)
+            : (righe.length?righe.map(r=>rigaHTML(r,complessivo)).join(''):
+              `<tr><td colspan="${conTab?9:8}" class="rigavuota">Nessuna voce. Premi «＋» qui sotto per iniziare.</td></tr>`)}
         </tbody>
       </table>
     </div>
 
-    <div class="azionitab noprint">
+    ${sempl?'':`<div class="azionitab noprint">
       <button id="btnRiga" class="primary piu" title="Aggiungi una riga (Ctrl+Invio)">＋</button>
-    </div>
+    </div>`}
 
     <div class="totalibox noprint" id="riquadroTotali">${totaliHTML(T)}</div>
   </div>`;
@@ -812,6 +844,22 @@ function rigaHTML(r,complessivo){
     <td class="cel-mezzo"><input class="cell-in num" data-k="iva" value="${r.iva===''?'':fmtQty(numIT(r.iva))}" placeholder="22" inputmode="decimal"></td>
     <td class="num calc" data-c="totale">${due(fmtEur(c.originale.totale), fmtEur(c.totale))}</td>
     <td class="az"><button data-act="del" title="Elimina la riga">×</button></td>
+  </tr>`;
+}
+
+/* La riga di una sezione. Non si scrive dentro: sono conti già fatti, che si
+   cambiano andando nella sezione — ed è quello che fa il nome, cliccandolo. */
+function rigaSempliceHTML(x){
+  return `<tr class="semplice" data-tab="${esc(x.tabId)}">
+    <td class="cel-art"><button class="vaitab grande" data-act="vaisez" title="Vai alla sezione «${esc(x.nome)}»"
+      ><span class="i">${esc(x.icona)}</span><span class="n">${esc(x.nome)}</span></button></td>
+    <td class="cel-desc"></td>
+    <td class="num calc">${fmtNum(x.imponibile)}</td>
+    <td class="cel-mezzo num calc">1</td>
+    <td class="num calc">${fmtNum(x.imponibile)}</td>
+    <td class="cel-mezzo num calc">${x.aliquota==null?'—':fmtQty(x.aliquota)}</td>
+    <td class="num calc">${fmtEur(x.totale)}</td>
+    <td class="az"></td>
   </tr>`;
 }
 
@@ -1124,7 +1172,11 @@ function adattaDescrizioni(){ $$('#corpo textarea[data-k="descrizione"]').forEac
 function legaVista(){
   $('#btnIntest').onclick = dialogoIntestazione;
   $('#btnCliente').onclick = dialogoCliente;
-  $('#btnRiga').onclick = ()=>{
+  const spunta=$('#chkSemplice');
+  if(spunta) spunta.onchange=()=>{ S.semplificato=spunta.checked; tocca(); render(); };
+  /* nel complessivo semplificato le righe non si scrivono: il tasto non c'è */
+  const piu=$('#btnRiga');
+  if(piu) piu.onclick = ()=>{
     const r=nuovaRiga(S.active);
     render();
     const tr=$(`#corpo tr[data-id="${r.id}"]`);
@@ -1177,7 +1229,15 @@ function legaVista(){
 
   corpo.addEventListener('click', e=>{
     const b=e.target.closest('button[data-act]'); if(!b) return;
-    const tr=b.closest('tr[data-id]'); const id=tr.dataset.id;
+    /* Nel complessivo semplificato la riga non è una voce ma una sezione:
+       cliccandola si va lì, dove quei numeri si possono cambiare. */
+    if(b.dataset.act==='vaisez'){
+      const riga=b.closest('tr[data-tab]');
+      if(riga && tabById(riga.dataset.tab)){ S.active=riga.dataset.tab; tocca(); render(); }
+      return;
+    }
+    const tr=b.closest('tr[data-id]'); if(!tr) return;
+    const id=tr.dataset.id;
     if(b.dataset.act==='desc') dialogoDescrizione(id);
     if(b.dataset.act==='del')  eliminaRiga(id);
     if(b.dataset.act==='vaitab'){
@@ -1188,7 +1248,7 @@ function legaVista(){
 
   /* Ctrl+Invio aggiunge una riga: le mani restano sulla tastiera. */
   corpo.addEventListener('keydown', e=>{
-    if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){ e.preventDefault(); $('#btnRiga').click(); }
+    if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){ e.preventDefault(); $('#btnRiga')?.click(); }
   });
 }
 
@@ -1765,7 +1825,17 @@ function foglioStampaHTML(tabId){
   const T=totali(righe);
   const conc=concordatoDi(T,t.id);
 
-  const corpo = righe.length
+  const corpo = semplificato(t.id)
+    ? (righeSemplificate().map(x=>`<tr>
+        <td class="art">${esc(x.nome)}</td>
+        <td class="desc"></td>
+        <td class="num">${fmtNum(x.imponibile)}</td>
+        <td class="num mezzo">1</td>
+        <td class="num">${fmtNum(x.imponibile)}</td>
+        <td class="num mezzo">${x.aliquota==null?'—':fmtQty(x.aliquota)}</td>
+        <td class="num">${fmtEur(x.totale)}</td>
+      </tr>`).join('') || `<tr><td colspan="7" class="st-vuoto">Preventivo senza sezioni.</td></tr>`)
+    : righe.length
     ? righe.map(r=>{
         const c=calcoloRiga(r);
         const p=r.promo!=null;
@@ -2215,7 +2285,26 @@ function foglioXlsx(tabId,primo){
 
   // --- voci: imponibile e totale sono formule ---
   const rPrima=r;
-  for(const v of righe){
+  /* Complessivo semplificato: una riga per sezione. Le formule restano vere —
+     imponibile = prezzo × quantità, totale = imponibile + IVA — così anche qui
+     si può ritoccare un numero e vedere il resto rifarsi da solo. Dove la
+     sezione mescola più aliquote non c'è una percentuale da scrivere, e il
+     totale va come cifra: una formula con un'aliquota inventata sarebbe peggio. */
+  const vociSemplici = semplificato(t.id) ? righeSemplificate() : null;
+  for(const x of (vociSemplici||[])){
+    add(
+      cellaTesto(0,r,x.nome,13),
+      cellaTesto(1,r,'',14),
+      cellaNum(2,r,x.imponibile,15),
+      cellaNum(3,r,1,16),
+      cellaForm(4,r,`${RIF(2,r)}*${RIF(3,r)}`,x.imponibile,15),
+      x.aliquota==null ? cellaTesto(5,r,'—',17) : cellaNum(5,r,x.aliquota,17),
+      x.aliquota==null ? cellaNum(6,r,x.totale,18)
+                       : cellaForm(6,r,`${RIF(4,r)}*(1+${RIF(5,r)}/100)`,x.totale,18),
+    );
+    r++;
+  }
+  for(const v of (vociSemplici?[]:righe)){
     const cc=calcoloRiga(v);
     if(inPromo(v)){
       /* In un foglio di calcolo due prezzi non stanno in una cella sola: il
