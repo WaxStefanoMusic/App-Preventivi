@@ -40,7 +40,7 @@
   --t-testata:11px;    /* ARTICOLO, DESCRIZIONE, … */
   --t-tot-k:13px;      /* IMPONIBILE TOTALE, IVA TOTALE */
   --t-tot-v:12.5px;    /* i loro importi */
-  --t-fin-k:14px;      /* TOTALE */
+  --t-fin-k:15px;      /* TOTALE e PREZZO CONCORDATO: le righe che chiudono il conto */
   --t-fin-v:18px;      /* il suo importo */
   --t-rata-k:11.5px;   /* ACCONTO ALLA CONFERMA D'ORDINE */
   --t-rata-p:13px;     /* la percentuale della rata */
