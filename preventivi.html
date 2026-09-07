@@ -1159,6 +1159,11 @@ function percAcconto(a,tabId){
 const accontoRitoccato = (a,tabId) => !!(a && a.sez && tabId && a.sez[tabId]!=null);
 /** true se in questa sezione almeno una rata è stata decisa a mano */
 const sezioneRitoccata = tabId => tabId!==ID_TOT && S.acconti.some(a=>accontoRitoccato(a,tabId));
+/* Nel complessivo la domanda diventa un'altra: c'è QUALCHE sezione decisa a
+   mano? Se sì, la percentuale che si vede qui è ricavata dagli importi, e può
+   non essere quella appena scritta: senza dirlo sembrerebbe un capriccio. */
+const conSezioniAMano = () => tabVoci().some(t=>sezioneRitoccata(t.id));
+const rateAMano = tabId => tabId===ID_TOT ? conSezioniAMano() : sezioneRitoccata(tabId);
 
 /** scrive la percentuale dove va: nella sezione, o nella predefinita se si è nel complessivo */
 function impostaPerc(a,tabId,valore){
@@ -1695,10 +1700,14 @@ function accontiHTML(){
 function notaPercentuali(){
   if(!S.acconti.length) return '';
   const somma=cent(S.acconti.reduce((s,a)=>s+numIT(percMostrata(a,S.active)),0));
-  const mano=sezioneRitoccata(S.active);
+  const tot=S.active===ID_TOT;
+  const testo = tot
+    ? 'Una sezione ha le rate decise a mano: qui vedi la percentuale che ne risulta.'
+    : 'Rate decise a mano in questa sezione.';
+  const etichetta = tot ? 'Riporta tutte al predefinito' : 'Riporta al predefinito';
   return `<div class="notaconc avviso"${somma===100?' hidden':''}>Le rate sommano al ${fmtQty(somma)}%.</div>`
-       + `<div class="notaconc mano" id="notaMano"${mano?'':' hidden'}>Rate decise a mano in questa sezione.
-           <button class="rimetti" id="btnRimettiAcconti" title="Torna alle percentuali predefinite, quelle che seguono le altre sezioni">Riporta al predefinito</button></div>`;
+       + `<div class="notaconc mano" id="notaMano"${rateAMano(S.active)?'':' hidden'}>${testo}
+           <button class="rimetti" id="btnRimettiAcconti" title="Le sezioni tornano a seguire la percentuale predefinita">${etichetta}</button></div>`;
 }
 
 /** ridisegna il riquadro dei totali senza far perdere il segno a chi sta scrivendo */
@@ -1760,7 +1769,10 @@ function legaConcordato(){
      predefinita: si cancella la loro annotazione, non si riscrive niente. */
   const rimetti=$('#btnRimettiAcconti');
   if(rimetti) rimetti.onclick=()=>{
-    for(const a of S.acconti) if(a.sez) delete a.sez[S.active];
+    for(const a of S.acconti){
+      if(!a.sez) continue;
+      if(S.active===ID_TOT) delete a.sez; else delete a.sez[S.active];
+    }
     tocca(); aggiornaTotali();
   };
 
@@ -1895,7 +1907,7 @@ function ricalcolaAcconti(escluso){
     el.classList.toggle('ritoccata',accontoRitoccato(a,S.active));
   });
   const mano=$('#notaMano');
-  if(mano) mano.hidden=!sezioneRitoccata(S.active);
+  if(mano) mano.hidden=!rateAMano(S.active);
   const avviso=$('#riquadroTotali .notaconc.avviso');
   if(avviso){
     const somma=cent(S.acconti.reduce((s,a)=>s+numIT(percMostrata(a,S.active)),0));
