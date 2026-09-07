@@ -1156,6 +1156,15 @@ function percAcconto(a,tabId){
   if(tabId && tabId!==ID_TOT && a.sez && a.sez[tabId]!=null) return a.sez[tabId];
   return a.perc;
 }
+/* Le percentuali si tengono PER INTERO, non arrotondate al centesimo di punto.
+   Scrivendo 2.181,50 in una sezione da 5.137,20 la percentuale è 42,464463…%:
+   arrotondata a 42,46 tornerebbe indietro come 2.181,26 €, e la cifra pattuita
+   non sarebbe più quella. Nei campi la si mostra corta — due decimali, quanto
+   serve a leggerla — e quella intera compare passandoci sopra col cursore. */
+const percPiena = n => String(Math.round((+n||0)*1e8)/1e8).replace('.',',');
+const percCorta = p => fmtQty(cent(numIT(p)));
+const percEsatta = p => String(numIT(p)).replace('.',',');
+
 const accontoRitoccato = (a,tabId) => !!(a && a.sez && tabId && a.sez[tabId]!=null);
 /** true se in questa sezione almeno una rata è stata decisa a mano */
 const sezioneRitoccata = tabId => tabId!==ID_TOT && S.acconti.some(a=>accontoRitoccato(a,tabId));
@@ -1188,7 +1197,7 @@ function percComplessivo(a){
   if(!tabVoci().some(t=>accontoRitoccato(a,t.id))) return a.perc;   // nessuno ha toccato niente
   const base=baseAcconti(ID_TOT);
   if(!base) return a.perc;
-  return fmtQty(cent(importoAcconto(a,ID_TOT)*100/base));
+  return percPiena(importoAcconto(a,ID_TOT)*100/base);
 }
 /** quella da far vedere nel riquadro della sezione aperta */
 const percMostrata = (a,tabId) => tabId===ID_TOT ? percComplessivo(a) : percAcconto(a,tabId);
@@ -1682,8 +1691,8 @@ function accontiHTML(){
   return S.acconti.map((a,i)=>`
     <div class="rt acconto${accontoRitoccato(a,S.active)?' ritoccata':''}" data-i="${i}">
       <input class="nome" value="${esc(a.nome)}" placeholder="Descrizione della rata" title="${esc(a.nome)}">
-      <span class="pc"><input class="perc" value="${esc(percMostrata(a,S.active))}" inputmode="decimal" placeholder="0"
-        title="${inSezione?'Percentuale di questa rata in questa sezione':'Percentuale predefinita: la seguono le sezioni non impostate a mano'}">%</span>
+      <span class="pc"><input class="perc" value="${esc(percCorta(percMostrata(a,S.active)))}" inputmode="decimal" placeholder="0"
+        title="${esc((inSezione?'Percentuale di questa rata in questa sezione':'Percentuale predefinita: la seguono le sezioni non impostate a mano')+' — esatta: '+percEsatta(percMostrata(a,S.active))+'%')}">%</span>
       ${inSezione
         ? `<span class="v scrivi"><input class="imp" value="${esc(fmtNum(importoAcconto(a,S.active)))}" inputmode="decimal"
              title="L'importo di questa rata in questa sezione: scrivendolo, la percentuale si ricava da qui"><span class="eu">€</span></span>`
@@ -1798,8 +1807,13 @@ function legaConcordato(){
       /* Una rata sta fra 0 e 100: finito di scrivere, la cifra si riporta nei
          limiti. Non lo si fa mentre si digita, o scrivendo «100» il campo
          verrebbe corretto già al primo «1». */
-      const v=fmtQty(Math.max(0,Math.min(100,numIT(percAcconto(a,S.active)))));
-      perc.value=v; scritta(v);
+      /* Se nel campo c'è ancora quello che ci abbiamo scritto noi — la
+         percentuale accorciata per leggerla — non si tocca niente: riscrivendo
+         quella corta, l'importo pattuito si sposterebbe di qualche centesimo. */
+      const piena=percAcconto(a,S.active);
+      if(perc.value.trim()===percCorta(piena)) return;
+      const v=percPiena(Math.max(0,Math.min(100,numIT(perc.value))));
+      scritta(v); perc.value=percCorta(v);
     };
 
     /* L'importo, quando è lui a essere pattuito. Da «2.150 €» si torna
@@ -1808,8 +1822,8 @@ function legaConcordato(){
     if(imp){
       const daImporto=()=>{
         const base=baseAcconti(S.active);
-        const quota = base ? cent(numIT(imp.value)*100/base) : 0;
-        impostaPerc(a,S.active,fmtQty(Math.max(0,Math.min(100,quota))));
+        const quota = base ? numIT(imp.value)*100/base : 0;
+        impostaPerc(a,S.active,percPiena(Math.max(0,Math.min(100,quota))));
         bilanciaAcconti(indice,S.active);
         riscriviPercentuali(null);          // qui si scrive nell'importo: le percentuali si riscrivono tutte
         tocca(); ricalcolaAcconti(imp);
@@ -1835,8 +1849,8 @@ function legaConcordato(){
 function bilanciaAcconti(i,tabId){
   const n=S.acconti.length;
   if(n<2 || i<0 || i>=n) return;                 // con una rata sola non c'è niente da bilanciare
-  const scritta=Math.max(0,Math.min(100,cent(numIT(percAcconto(S.acconti[i],tabId)))));
-  const resto=cent(100-scritta);
+  const scritta=Math.max(0,Math.min(100,numIT(percAcconto(S.acconti[i],tabId))));
+  const resto=100-scritta;
   const altri=S.acconti.map((_,k)=>k).filter(k=>k!==i);
   const pesi=altri.map(k=>Math.max(0,numIT(percAcconto(S.acconti[k],tabId))));
   const somma=pesi.reduce((a,b)=>a+b,0);
@@ -1844,10 +1858,10 @@ function bilanciaAcconti(i,tabId){
   altri.forEach((k,j)=>{
     const ultimo = j===altri.length-1;
     const quota = ultimo
-      ? cent(resto-dato)
-      : cent(somma>0 ? resto*pesi[j]/somma : resto/altri.length);
-    dato=cent(dato+quota);
-    impostaPerc(S.acconti[k],tabId,fmtQty(quota));
+      ? resto-dato
+      : (somma>0 ? resto*pesi[j]/somma : resto/altri.length);
+    dato=dato+quota;
+    impostaPerc(S.acconti[k],tabId,percPiena(quota));
   });
 }
 
@@ -1866,10 +1880,10 @@ function normalizzaIn(tabId){
   let dato=0;
   S.acconti.forEach((a,k)=>{
     const quota = k===n-1
-      ? cent(100-dato)
-      : cent(somma>0 ? 100*pesi[k]/somma : 100/n);
-    dato=cent(dato+quota);
-    impostaPerc(a,tabId,fmtQty(quota));
+      ? 100-dato
+      : (somma>0 ? 100*pesi[k]/somma : 100/n);
+    dato=dato+quota;
+    impostaPerc(a,tabId,percPiena(quota));
   });
 }
 
@@ -1882,8 +1896,10 @@ function riscriviPercentuali(escluso){
     const a=S.acconti[+el.dataset.i]; if(!a) return;
     const inp=el.querySelector('.perc');
     if(!inp || inp===escluso) return;
-    const valore=percMostrata(a,S.active);
-    if(inp.value!==valore) inp.value=valore;
+    const piena=percMostrata(a,S.active);
+    const corta=percCorta(piena);
+    if(inp.value!==corta) inp.value=corta;
+    inp.title=inp.title.replace(/ — esatta: .*$/,'')+' — esatta: '+percEsatta(piena)+'%';
   });
 }
 
@@ -2649,7 +2665,7 @@ function foglioStampaHTML(tabId){
         <tr class="finale v-concordato"><td class="k" colspan="5">${esc(voceTesto('concordato','PREZZO CONCORDATO'))}</td><td class="v" colspan="2">${fmtEur(conc.prezzo)}</td></tr>`:''}
         ${S.acconti.map((a,i)=>`<tr class="acconto v-rata${i===0?' primo':''}">
           <td class="k" colspan="4">${esc(a.nome)}</td>
-          <td class="pc">${percMostrata(a,t.id)===''?'':fmtQty(numIT(percMostrata(a,t.id)))+'%'}</td>
+          <td class="pc">${percMostrata(a,t.id)===''?'':percCorta(percMostrata(a,t.id))+'%'}</td>
           <td class="v" colspan="2">${fmtEur(importoAcconto(a,t.id))}</td>
         </tr>`).join('')}
       </tbody>
