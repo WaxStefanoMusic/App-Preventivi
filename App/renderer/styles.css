@@ -96,7 +96,7 @@ header.app{
   display:grid;place-items:center;font-size:14px;flex:0 0 auto;
 }
 .brand small{display:block;font-weight:420;color:var(--ink-3);font-size:11px;line-height:1}
-.spacer{flex:1}
+.spacer{flex:1 1 0;min-width:0}
 /* I due tasti al centro della testata: dove si salva, e come si mette al sicuro.
    Centrati sulla finestra, non fra i due gruppi di pulsanti — che hanno pesi
    diversi e li lascerebbero visibilmente storti. Quando la finestra si stringe
@@ -219,23 +219,33 @@ main{flex:1;overflow:auto;padding:16px 16px 60px}
 
 /* La barra dei comandi non è legata alla misura del foglio: i pulsanti devono
    starci in fila, altrimenti su A4 verticale andrebbero a capo. */
+/* Tutti i comandi su UNA riga: andando a capo la barra si mangia lo spazio del
+   foglio e i tasti ballano da una posizione all'altra. Per starci dentro anche
+   con la spunta del complessivo semplificato — che è larga — le voci hanno un
+   po' meno imbottitura e lo spazio elastico in mezzo può sparire del tutto.
+   Se proprio la finestra è troppo stretta si scorre, non si va a capo. */
 .barra{
-  display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 auto 12px;
-  max-width:min(100%,1180px);
+  display:flex;align-items:center;gap:6px;flex-wrap:nowrap;margin:0 auto 12px;
+  max-width:min(100%,1500px);overflow-x:auto;scrollbar-width:none;
 }
+/* la barretta di scorrimento non si vede: comparendo ruberebbe altezza alla
+   riga, ed è il caso raro della finestra stretta — la riga resta intera */
+.barra::-webkit-scrollbar{height:0}
+.barra > *{flex:0 0 auto}
+.barra button{padding:6px 9px}
+.barra .segbtns button{padding:5px 9px}
 .barra .sep{width:1px;align-self:stretch;background:var(--border);margin:2px 2px}
 /* La spunta del complessivo semplificato: prima di tutto il resto, contro il
-   bordo sinistro, perché cambia che cosa si sta guardando. */
-.barra .spuntabarra{
-  display:flex;align-items:center;gap:7px;cursor:pointer;
-  font-size:12.5px;font-weight:560;color:var(--ink-2);padding:3px 8px 3px 0;
-}
-.barra .spuntabarra:hover{color:var(--ink-1)}
-.barra .spuntabarra input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer;margin:0}
+   bordo sinistro, perché cambia che cosa si sta guardando. Il contorno è quello
+   dei pulsanti — se lo prende dalla classe «btn» — così sta in riga con loro
+   invece di sembrarci appoggiata accanto. */
+.barra .spuntabarra{font-size:12.5px;font-weight:560;color:var(--ink-2);cursor:pointer;gap:7px}
+.barra .spuntabarra:hover{background:var(--plane);border-color:var(--ink-3);color:var(--ink-1)}
+.barra .spuntabarra input{width:15px;height:15px;accent-color:var(--accent);cursor:pointer;margin:0;flex:0 0 auto}
 .barra .campo-data{display:flex;align-items:center;gap:6px}
 .barra .campo-data span{font-size:12px;color:var(--ink-2);font-weight:560}
 .barra select#ambito{font-size:12.5px;padding:5px 8px}
-input.data{width:120px;text-align:center;font-variant-numeric:tabular-nums;letter-spacing:.02em}
+input.data{width:104px;text-align:center;font-variant-numeric:tabular-nums;letter-spacing:.02em}
 input.data::placeholder{color:var(--ink-3);opacity:.7;letter-spacing:0}
 
 /* Il foglio: nessun titolo, nessuna cornice di sezione, solo la tabella. È largo

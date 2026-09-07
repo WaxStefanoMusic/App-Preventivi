@@ -746,7 +746,7 @@ function vistaPreventivo(){
 
   return `
   <div class="barra noprint">
-    ${complessivo?`<label class="spuntabarra" title="Al posto di tutte le voci mostra una riga per sezione, con il suo totale. I conti non cambiano.">
+    ${complessivo?`<label class="btn spuntabarra" title="Al posto di tutte le voci mostra una riga per sezione, con il suo totale. I conti non cambiano.">
       <input type="checkbox" id="chkSemplice"${S.semplificato?' checked':''}>
       <span>Preventivo Complessivo Semplificato</span>
     </label>`:''}
@@ -851,9 +851,9 @@ function rigaHTML(r,complessivo){
    cambiano andando nella sezione — ed è quello che fa il nome, cliccandolo. */
 function rigaSempliceHTML(x){
   return `<tr class="semplice" data-tab="${esc(x.tabId)}">
-    <td class="cel-art"><button class="vaitab grande" data-act="vaisez" title="Vai alla sezione «${esc(x.nome)}»"
+    <td class="cel-art"></td>
+    <td class="cel-desc"><button class="vaitab grande" data-act="vaisez" title="Vai alla sezione «${esc(x.nome)}»"
       ><span class="i">${esc(x.icona)}</span><span class="n">${esc(x.nome)}</span></button></td>
-    <td class="cel-desc"></td>
     <td class="num calc">${fmtNum(x.imponibile)}</td>
     <td class="cel-mezzo num calc">1</td>
     <td class="num calc">${fmtNum(x.imponibile)}</td>
@@ -1827,8 +1827,8 @@ function foglioStampaHTML(tabId){
 
   const corpo = semplificato(t.id)
     ? (righeSemplificate().map(x=>`<tr>
-        <td class="art">${esc(x.nome)}</td>
-        <td class="desc"></td>
+        <td class="art"></td>
+        <td class="desc">${esc(x.nome)}</td>
         <td class="num">${fmtNum(x.imponibile)}</td>
         <td class="num mezzo">1</td>
         <td class="num">${fmtNum(x.imponibile)}</td>
@@ -2293,8 +2293,8 @@ function foglioXlsx(tabId,primo){
   const vociSemplici = semplificato(t.id) ? righeSemplificate() : null;
   for(const x of (vociSemplici||[])){
     add(
-      cellaTesto(0,r,x.nome,13),
-      cellaTesto(1,r,'',14),
+      cellaTesto(0,r,'',13),
+      cellaTesto(1,r,x.nome,14),
       cellaNum(2,r,x.imponibile,15),
       cellaNum(3,r,1,16),
       cellaForm(4,r,`${RIF(2,r)}*${RIF(3,r)}`,x.imponibile,15),
