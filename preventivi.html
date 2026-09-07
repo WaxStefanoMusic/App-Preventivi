@@ -243,6 +243,17 @@ main{flex:1;overflow:auto;padding:16px 16px 60px}
    in un angolo. Lì si centrano. Nel complessivo, dove la spunta li porta quasi
    a filo, restano dove sono. */
 .barra.centrata{justify-content:center}
+/* I due gradini con cui la barra si stringe quando i comandi non ci stanno:
+   li mette «adattaBarra», misurando. */
+.barra.stretta{gap:5px}
+.barra.stretta button,.barra.stretta .btn{padding:5px 8px;font-size:12px}
+.barra.stretta input.data{width:96px}
+.barra.strettissima{gap:4px}
+.barra.strettissima button,.barra.strettissima .btn{padding:4px 7px;font-size:11.5px}
+.barra.strettissima input.data{width:86px}
+.barra.strettissima .spuntabarra input{width:14px;height:14px}
+/* quando proprio non ci sta, si riparte da sinistra invece che dal centro */
+.barra.trabocca{justify-content:flex-start}
 .barra button{padding:6px 9px}
 .barra .segbtns button{padding:5px 9px}
 .barra .sep{width:1px;align-self:stretch;background:var(--border);margin:2px 2px}
@@ -422,6 +433,13 @@ tr.conpromo td.calc .pro{color:var(--good-text)}
 .menusel .spunta input{width:14px;height:14px;margin:0;accent-color:var(--accent);cursor:pointer}
 .menusel .spunta span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .menusel .vuoto{padding:7px 9px;font-size:12.5px;color:var(--ink-3)}
+.menusel .titolo{
+  padding:8px 10px 6px;font-size:11px;text-transform:uppercase;letter-spacing:.05em;
+  color:var(--ink-3);border-bottom:1px solid var(--border);margin-bottom:3px;
+}
+/* una sezione tenuta fuori dal complessivo si riconosce dalla sua linguetta */
+.tab.esclusa .lbl{text-decoration:line-through}
+.tab.esclusa .ico,.tab.esclusa .cnt{opacity:.6}
 
 .rigavuota{padding:26px 10px;text-align:center;color:var(--ink-3);font-size:13px}
 /* Il «＋» sta in mezzo, sotto la tabella. */
@@ -950,6 +968,10 @@ const NUOVO = () => ({
   /* Complessivo semplificato: al posto di tutte le voci, una riga per
      sezione. È una scelta di QUESTO preventivo, quindi va nel file. */
   semplificato:false,
+  /* Sezioni tenute FUORI dal complessivo. Restano dove sono, con i loro
+     articoli e i loro totali: è il complessivo che non le conta — serve quando
+     una sezione è un'alternativa, o un lavoro da quotare a parte. */
+  escluse:[],
   active:null,                                // impostato subito dopo
 });
 
@@ -975,11 +997,16 @@ let filePath = null, modificato = false;
 const tabById = id => S.tabs.find(t=>t.id===id);
 const tabCorrente = () => tabById(S.active) || S.tabs[0];
 const tabVoci = () => S.tabs.filter(t=>t.type==='voci');
+/* Le sezioni che compongono il complessivo: tutte, meno quelle messe da parte
+   dal menu «Sezioni nel Preventivo Complessivo». */
+const esclusaDalTotale = id => Array.isArray(S.escluse) && S.escluse.includes(id);
+const tabNelTotale = () => tabVoci().filter(t=>!esclusaDalTotale(t.id));
 /** le righe del tab: quello complessivo le mostra tutte, in ordine di sezione */
 function righeDi(tabId){
   if(tabId===ID_TOT){
     const ordine=new Map(S.tabs.map((t,i)=>[t.id,i]));
-    return S.righe.slice().sort((a,b)=>(ordine.get(a.tabId)??99)-(ordine.get(b.tabId)??99));
+    return S.righe.filter(r=>!esclusaDalTotale(r.tabId))
+                  .sort((a,b)=>(ordine.get(a.tabId)??99)-(ordine.get(b.tabId)??99));
   }
   return S.righe.filter(r=>r.tabId===tabId);
 }
@@ -1138,7 +1165,7 @@ function concordatoDi(T,tabId){
    ------------------------------------------------------------------ */
 function ripartisciConcordato(){
   if(!concordatoAttivo()) return;
-  const sezioni=tabVoci();
+  const sezioni=tabNelTotale();
   if(!sezioni.length) return;
   const scritto=valConcordato(ID_TOT);
   if(String(scritto).trim()===''){ for(const t of sezioni) S.concordati[t.id]=''; return; }
@@ -1171,7 +1198,7 @@ function ripartisciConcordato(){
    ------------------------------------------------------------------ */
 const semplificato = tabId => !!S.semplificato && tabId===ID_TOT;
 function righeSemplificate(){
-  return tabVoci().map(t=>{
+  return tabNelTotale().map(t=>{
     const T=totali(righeDi(t.id));
     return {tabId:t.id, nome:t.name||'Sezione', icona:t.icon||'📄',
             imponibile:T.imponibile, totale:T.totale,
@@ -1221,7 +1248,7 @@ const sezioneRitoccata = tabId => tabId!==ID_TOT && S.acconti.some(a=>accontoRit
 /* Nel complessivo la domanda diventa un'altra: c'è QUALCHE sezione decisa a
    mano? Se sì, la percentuale che si vede qui è ricavata dagli importi, e può
    non essere quella appena scritta: senza dirlo sembrerebbe un capriccio. */
-const conSezioniAMano = () => tabVoci().some(t=>sezioneRitoccata(t.id));
+const conSezioniAMano = () => tabNelTotale().some(t=>sezioneRitoccata(t.id));
 const rateAMano = tabId => tabId===ID_TOT ? conSezioniAMano() : sezioneRitoccata(tabId);
 
 /** scrive la percentuale dove va: nella sezione, o nella predefinita se si è nel complessivo */
@@ -1237,14 +1264,14 @@ function impostaPerc(a,tabId,valore){
    50% di tutto: è quella la cifra che il cliente paga. */
 function importoAcconto(a,tabId){
   if(tabId!==ID_TOT) return cent(baseAcconti(tabId)*numIT(percAcconto(a,tabId))/100);
-  const sezioni=tabVoci();
+  const sezioni=tabNelTotale();
   if(!sezioni.length) return cent(baseAcconti(ID_TOT)*numIT(a.perc)/100);
   return sezioni.reduce((tot,t)=>cent(tot+importoAcconto(a,t.id)),0);
 }
 
 /** la percentuale che il complessivo mostra: ricavata all'indietro dagli importi veri */
 function percComplessivo(a){
-  if(!tabVoci().some(t=>accontoRitoccato(a,t.id))) return a.perc;   // nessuno ha toccato niente
+  if(!tabNelTotale().some(t=>accontoRitoccato(a,t.id))) return a.perc;   // nessuno ha toccato niente
   const base=baseAcconti(ID_TOT);
   if(!base) return a.perc;
   return percPiena(importoAcconto(a,ID_TOT)*100/base);
@@ -1256,7 +1283,7 @@ const percMostrata = (a,tabId) => tabId===ID_TOT ? percComplessivo(a) : percAcco
 function sommaConcordati(){
   if(!concordatoAttivo()) return;
   let s=0;
-  for(const t of tabVoci()) s=cent(s+numIT(valConcordato(t.id)));
+  for(const t of tabNelTotale()) s=cent(s+numIT(valConcordato(t.id)));
   S.concordati[ID_TOT]=fmtNum(s);
 }
 /** «Sconto» con la percentuale fra parentesi, quando dice qualcosa */
@@ -1435,7 +1462,8 @@ function renderTabs(){
   bar.innerHTML='';
   S.tabs.forEach(t=>{
     const b=document.createElement('button');
-    b.className='tab'+(t.id===S.active?' active':'');
+    b.className='tab'+(t.id===S.active?' active':'')+(esclusaDalTotale(t.id)?' esclusa':'');
+    if(esclusaDalTotale(t.id)) b.title='Fuori dal Preventivo Complessivo';
     b.draggable=t.type!=='tot';
     b.dataset.id=t.id;
     b.innerHTML=`<span class="ico">${esc(t.icon||'📄')}</span>
@@ -1603,7 +1631,8 @@ function vistaPreventivo(){
   const conTab = complessivo && !sempl;      // la colonna della sezione
 
   return `
-  <div class="barra noprint${complessivo?'':' centrata'}">
+  <div class="barra noprint centrata">
+    ${complessivo?`<button id="btnSezioniTot" title="Scegli quali sezioni entrano nel Preventivo Complessivo">Sezioni nel Preventivo Complessivo ▾</button>`:''}
     ${complessivo?`<label class="btn spuntabarra" title="Al posto di tutte le voci mostra una riga per sezione, con il suo totale. I conti non cambiano.">
       <input type="checkbox" id="chkSemplice"${S.semplificato?' checked':''}>
       <span>Preventivo Complessivo Semplificato</span>
@@ -1724,7 +1753,7 @@ function rigaSempliceHTML(x){
 function totaliHTML(T){
   const attivo = concordatoAttivo();
   const c = concordatoDi(T);
-  const nSez = tabVoci().length;
+  const nSez = tabNelTotale().length;
   const nota = attivo && nSez>1
     ? (S.active===ID_TOT
         ? 'Ripartito fra le ' + nSez + ' sezioni in proporzione al loro peso.'
@@ -2053,6 +2082,10 @@ function legaVista(){
 
   const sel=$('#btnSeleziona');
   if(sel) sel.onclick=e=>{ e.stopPropagation(); menuSeleziona(sel); };
+
+  const sezTot=$('#btnSezioniTot');
+  if(sezTot) sezTot.onclick=e=>{ e.stopPropagation(); menuSezioniTotale(sezTot); };
+  adattaBarra();
 
   const dp=$('#dataPrev');
   legaCampoData(dp,v=>{ S.data=v; tocca(); });
@@ -2650,6 +2683,88 @@ function menuSeleziona(tasto){
     document.addEventListener('keydown',tastiera);
   },0);
 }
+
+/* Una sezione tolta dal complessivo si stacca anche dalle rate: le percentuali
+   che aveva in quel momento diventano sue. Senza questo, cambiando le rate dal
+   complessivo cambierebbero anche a lei — che con quel totale non c'entra più
+   niente. Rimettendola dentro, se le sue percentuali sono rimaste quelle
+   predefinite torna semplicemente a seguirle. */
+function staccaAccontiDi(tabId){
+  for(const a of S.acconti) impostaPerc(a,tabId,percAcconto(a,tabId));
+}
+function riattaccaAccontiDi(tabId){
+  for(const a of S.acconti)
+    if(a.sez && a.sez[tabId]!=null && numIT(a.sez[tabId])===numIT(a.perc)) delete a.sez[tabId];
+}
+
+/* Quali sezioni entrano nel complessivo. Togliendone una, il preventivo
+   complessivo smette di contarla: la sezione resta al suo posto, intatta, e
+   basta rimetterle la spunta per riaverla dentro. */
+function menuSezioniTotale(tasto){
+  chiudiMenuDom();
+  const sezioni=tabVoci();
+  const m=document.createElement('div');
+  m.className='menuctx menusel';
+  m.innerHTML=
+    `<div class="titolo">Sezioni nel Preventivo Complessivo</div>`+
+    (sezioni.length
+      ? sezioni.map(t=>`<label class="spunta"><input type="checkbox" data-id="${esc(t.id)}"${esclusaDalTotale(t.id)?'':' checked'}><span>${esc(t.icon||'📄')} ${esc(t.name)}</span></label>`).join('')
+      : `<div class="vuoto">Nessuna sezione</div>`)+
+    `<div class="divisore"></div>`+
+    `<button data-m="tutte">Rimettile tutte</button>`;
+  document.body.appendChild(m);
+
+  const r=tasto.getBoundingClientRect();
+  collocaFluttuante(m,r.left,r.bottom+6);
+
+  /* Le spunte non chiudono il menu: se ne tolgono e rimettono più d'una di
+     seguito, guardando intanto come cambia il totale dietro. */
+  const applica=()=>{
+    const prima=new Set(Array.isArray(S.escluse)?S.escluse:[]);
+    const ora=[...m.querySelectorAll('input[type="checkbox"]:not(:checked)')].map(c=>c.dataset.id);
+    for(const id of ora)   if(!prima.has(id))    staccaAccontiDi(id);      // appena tolta
+    for(const id of prima) if(!ora.includes(id)) riattaccaAccontiDi(id);   // appena rimessa
+    S.escluse=ora;
+    tocca(); render();
+  };
+  m.addEventListener('change',ev=>{ if(ev.target.matches('input[type="checkbox"]')) applica(); });
+  m.addEventListener('click',ev=>{
+    if(!ev.target.closest('button[data-m="tutte"]')) return;
+    m.querySelectorAll('input[type="checkbox"]').forEach(c=>{ c.checked=true; });
+    applica();
+  });
+
+  const fuori=ev=>{ if(!m.contains(ev.target) && ev.target!==tasto) chiudi(); };
+  const tastiera=ev=>{ if(ev.key==='Escape') chiudi(); };
+  function chiudi(){
+    document.removeEventListener('mousedown',fuori);
+    document.removeEventListener('keydown',tastiera);
+    m.remove();
+  }
+  setTimeout(()=>{
+    document.addEventListener('mousedown',fuori);
+    document.addEventListener('keydown',tastiera);
+  },0);
+}
+
+/* I comandi in cima stanno su UNA riga sola, sempre, e in mezzo allo schermo.
+   Quando non ci stanno — schermo piccolo, o il complessivo che ha due voci in
+   più delle sezioni — invece di andare a capo si stringono di un gradino, e se
+   ancora non basta di due: meglio due pixel di imbottitura in meno che una
+   fila di tasti che balla da una riga all'altra. */
+function adattaBarra(){
+  const b=$('.barra'); if(!b) return;
+  b.classList.remove('stretta','strettissima');
+  if(b.scrollWidth<=b.clientWidth+1) return;
+  b.classList.add('stretta');
+  if(b.scrollWidth<=b.clientWidth+1) return;
+  b.classList.add('strettissima');
+  /* Se nemmeno stringendo ci sta — finestra molto piccola — si smette di
+     centrare: centrata, la riga verrebbe tagliata da tutte e due le parti e
+     non si capirebbe nemmeno da che parte cercare il resto. */
+  b.classList.toggle('trabocca', b.scrollWidth>b.clientWidth+1);
+}
+addEventListener('resize',adattaBarra);
 
 function applicaFormatoPagina(){
   const verso = OPZ.orizzontale ? 'landscape' : 'portrait';

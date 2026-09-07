@@ -237,6 +237,17 @@ main{flex:1;overflow:auto;padding:16px 16px 60px}
    in un angolo. Lì si centrano. Nel complessivo, dove la spunta li porta quasi
    a filo, restano dove sono. */
 .barra.centrata{justify-content:center}
+/* I due gradini con cui la barra si stringe quando i comandi non ci stanno:
+   li mette «adattaBarra», misurando. */
+.barra.stretta{gap:5px}
+.barra.stretta button,.barra.stretta .btn{padding:5px 8px;font-size:12px}
+.barra.stretta input.data{width:96px}
+.barra.strettissima{gap:4px}
+.barra.strettissima button,.barra.strettissima .btn{padding:4px 7px;font-size:11.5px}
+.barra.strettissima input.data{width:86px}
+.barra.strettissima .spuntabarra input{width:14px;height:14px}
+/* quando proprio non ci sta, si riparte da sinistra invece che dal centro */
+.barra.trabocca{justify-content:flex-start}
 .barra button{padding:6px 9px}
 .barra .segbtns button{padding:5px 9px}
 .barra .sep{width:1px;align-self:stretch;background:var(--border);margin:2px 2px}
@@ -416,6 +427,13 @@ tr.conpromo td.calc .pro{color:var(--good-text)}
 .menusel .spunta input{width:14px;height:14px;margin:0;accent-color:var(--accent);cursor:pointer}
 .menusel .spunta span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .menusel .vuoto{padding:7px 9px;font-size:12.5px;color:var(--ink-3)}
+.menusel .titolo{
+  padding:8px 10px 6px;font-size:11px;text-transform:uppercase;letter-spacing:.05em;
+  color:var(--ink-3);border-bottom:1px solid var(--border);margin-bottom:3px;
+}
+/* una sezione tenuta fuori dal complessivo si riconosce dalla sua linguetta */
+.tab.esclusa .lbl{text-decoration:line-through}
+.tab.esclusa .ico,.tab.esclusa .cnt{opacity:.6}
 
 .rigavuota{padding:26px 10px;text-align:center;color:var(--ink-3);font-size:13px}
 /* Il «＋» sta in mezzo, sotto la tabella. */
