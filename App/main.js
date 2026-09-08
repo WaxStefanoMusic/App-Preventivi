@@ -441,7 +441,9 @@ function cercaAggiornamenti(chiestoDallUtente) {
 /* -------------------------------------------------------------------------
    Cartella dei preventivi
    ------------------------------------------------------------------------- */
-ipcMain.handle('cartella:info', () => ({ ...CARTELLA }));
+/* «maiScelta» serve al primo avvio: se nessuno ha mai scelto dove salvare,
+   l'app lo chiede una volta invece di decidere da sola e basta. */
+ipcMain.handle('cartella:info', () => ({ ...CARTELLA, maiScelta: !leggiConfig().cartella }));
 ipcMain.handle('cartella:apri', async () => {
   try { fs.mkdirSync(CARTELLA.dir, { recursive: true }); } catch (_) {}
   await shell.openPath(CARTELLA.dir);

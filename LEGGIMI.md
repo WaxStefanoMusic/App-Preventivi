@@ -139,11 +139,16 @@ si importano: li ricalcola l'app. Le righe dei totali vengono saltate da sole.
 Importando dal TAB complessivo — che non è un contenitore ma la somma degli
 altri — le voci finiscono nella prima sezione, e il messaggio dice in quale.
 
-**Il nome, subito.** All'avvio l'app chiede come si chiama il preventivo: da quel
+**Da dove si parte.** Al primissimo avvio dopo l'installazione l'app chiede una
+volta sola dove tenere preventivi, intestazioni e backup; chi preferisce farlo
+dopo chiude e se ne occupa dal tasto **Cartella Salvataggi**, in cima.
+Poi — e a ogni avvio successivo — si apre il riquadro con cui si comincia:
+**Nuovo**, **Carica Preventivo**, **Recenti**, **Chiudi**.
+
+**Il nome.** Scegliendo «Nuovo» l'app chiede come si chiama il preventivo: da quel
 nome nascono la **sua cartella** e, dentro, quella dei **backup**, dove viene
 salvata una copia **ogni 10 minuti** finché ci lavori (solo se qualcosa è
-cambiato; ne restano le ultime 40). Se invece vuoi riprendere un lavoro, dalla
-stessa finestra puoi aprire un preventivo o scegliere fra i recenti.
+cambiato; ne restano le ultime 40).
 
 I preventivi si salvano con estensione `.preventivo`: un doppio clic li apre con
 l'app, **anche i backup**. I vecchi file `.json` continuano ad aprirsi.

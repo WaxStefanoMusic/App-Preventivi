@@ -598,15 +598,22 @@ button#btnAcconto{align-self:center}
   flex:0 0 auto;display:flex;align-items:center;gap:10px;
 }
 /* la «x» sta a sinistra del titolo, dove è stata chiesta */
+/* La crocetta sta in alto a DESTRA: è l'angolo in cui la si cerca, e lontano
+   dal titolo non la si preme per sbaglio leggendo. */
 .modal h3 .chiudix{
   flex:0 0 auto;width:26px;height:26px;padding:0;justify-content:center;
   font-size:17px;line-height:1;color:var(--ink-2);
   border-color:var(--border);background:var(--surface-1);
+  margin-left:auto;
 }
+/* il nome dell'app, accanto alla crocetta, nella finestra che si apre per prima */
+.modal h3 .nomeapp{
+  margin-left:auto;font-size:12.5px;font-weight:600;color:var(--ink-3);
+  letter-spacing:.02em;white-space:nowrap;
+}
+.modal h3 .nomeapp + .chiudix{margin-left:0}
 .modal h3 .chiudix:hover{color:var(--critical);border-color:var(--critical)}
-/* Dove la finestra è larga e piena di comandi, la crocetta sta in alto a
-   destra: è l'angolo in cui la si cerca, lontano dai campi da compilare. */
-.modal.xdx h3 .chiudix{order:2;margin-left:auto}
+
 .modal .body{padding:18px;overflow:auto;flex:1 1 auto}
 .modal .foot{
   padding:12px 18px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;

@@ -573,7 +573,7 @@ function dialogoAspetto(){
       $$('.aspetto .px'  ).forEach(el=>el.oninput =()=>cambia(el,'px',el.value));
       $$('.aspetto .caso').forEach(el=>el.onchange=()=>cambia(el,'caso',el.value));
       $$('.aspetto .peso').forEach(el=>el.onchange=()=>cambia(el,'peso',el.value));
-    },'wide conx xdx');
+    },'wide conx');
 }
 
 /* ==============================================================================
@@ -1292,7 +1292,11 @@ function modal(titolo,corpoHTML,bottoni=[{label:'Chiudi'}],onOpen,cls='',onClose
   /* La «x» in alto a sinistra si mette solo dove serve poter chiudere senza
      rispondere: la si chiede con la classe «conx». */
   const conX = /\bconx\b/.test(cls||'');
-  m.innerHTML=`<h3>${conX?`<button class="chiudix" title="Chiudi">×</button>`:''}<span>${esc(titolo)}</span></h3>
+  /* «nomeapp» scrive «App Preventivi» in alto a destra, prima della crocetta:
+     serve alla finestra che si apre per prima, che altrimenti non direbbe
+     nemmeno di che programma è. */
+  const conNome = /\bnomeapp\b/.test(cls||'');
+  m.innerHTML=`<h3><span>${esc(titolo)}</span>${conNome?`<span class="nomeapp">App Preventivi</span>`:''}${conX?`<button class="chiudix" title="Chiudi">×</button>`:''}</h3>
     <div class="body">${corpoHTML}</div>
     <div class="foot">${bottoni.map((b,i)=>`<button data-i="${i}" class="${b.primary?'primary':b.danger?'danger':''}">${esc(b.label)}</button>`).join('')}</div>`;
   ov.hidden=false;
@@ -2185,14 +2189,15 @@ async function apriDaPercorso(percorso){
 /* Dare il nome subito non è una formalità: da quel nome nascono la cartella del
    preventivo e la sua sottocartella dei backup, ed è lì che l'app salverà da
    sola ogni ${MINUTI_BACKUP} minuti. Senza nome non c'è dove mettere niente. */
-function dialogoNome(allAvvio){
-  const bottoni = allAvvio
-    ? [{label:'📂 Apri un preventivo',fn:()=>{ setTimeout(apriPreventivo,50); }},
-       {label:'🕘 Recenti',fn:()=>{ setTimeout(dialogoRecenti,50); }},
-       {label:'Crea',primary:true,fn:()=>confermaNome(true)}]
-    : [{label:'Annulla'},{label:'Salva',primary:true,fn:()=>confermaNome(false)}];
+function dialogoNome(allAvvio,daAvvio){
+  /* Venendo dal riquadro iniziale, «Annulla» non abbandona: riporta lì, che è
+     il posto da cui si è partiti. */
+  const bottoni = [
+    daAvvio ? {label:'Annulla',fn:()=>{ setTimeout(dialogoAvvio,50); }} : {label:'Annulla'},
+    {label: daAvvio?'Crea':'Salva',primary:true,fn:()=>confermaNome(!!allAvvio)},
+  ];
 
-  modal(allAvvio?'Come si chiama questo preventivo?':'Nome del preventivo',`
+  modal(daAvvio?'Nuovo preventivo':'Nome del preventivo',`
     <label class="fld">Nome
       <input id="mNomeDoc" value="${esc(S.nome)}" maxlength="80" autocomplete="off"
              placeholder="es. Cucina Rossi">
@@ -2210,10 +2215,70 @@ function dialogoNome(allAvvio){
       i.onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault();
         $$('.modal .foot button').pop().click(); } };
     },
-    /* All'avvio la finestra porta la «x»: si può chiudere senza dare un nome —
-       per dare un'occhiata, o perché si è appena ripristinato il preventivo
-       della sessione precedente. Il nome si dà dopo, cliccandolo in alto. */
-    allAvvio?'conx':'');
+    /* La «x» c'è sempre: si può chiudere senza dare un nome — per dare
+       un'occhiata, o perché si è appena ripristinato il preventivo della
+       sessione precedente. Il nome si dà dopo, cliccandolo in alto. */
+    'conx');
+}
+
+/* ------------------------------------------------------------------
+   Le due finestre che si vedono per prime.
+
+   Al primissimo avvio dopo l'installazione l'app non sa ancora dove tenere le
+   sue cose: lo chiede, una volta sola. Chi preferisce farlo con calma chiude e
+   se ne occupa dopo, dal tasto «Cartella Salvataggi» in cima.
+   Subito dopo — e a ogni avvio successivo — si apre il riquadro con cui si
+   comincia: nuovo, carica, recenti.
+   ------------------------------------------------------------------ */
+const CHIAVE_CARTELLA_CHIESTA='preventivi:cartellaChiesta';
+
+async function daChiedereLaCartella(){
+  if(!IO.desktop) return false;
+  try{ if(localStorage.getItem(CHIAVE_CARTELLA_CHIESTA)) return false; }catch(_){}
+  let c=null;
+  try{ c=await IO.cartellaInfo(); }catch(_){}
+  try{ localStorage.setItem(CHIAVE_CARTELLA_CHIESTA,'1'); }catch(_){}   // si chiede una volta sola
+  return !!(c && c.maiScelta);
+}
+
+function dialogoPrimaCartella(){
+  return new Promise(async risolvi=>{
+    let c=null;
+    try{ c=await IO.cartellaInfo(); }catch(_){}
+    modal('Dove tenere i preventivi',`
+      <p style="margin:0">Prima di cominciare, scegli la cartella dove l'app terrà
+      <b>preventivi</b>, <b>intestazioni</b> e <b>backup</b>.</p>
+      ${c?`<div class="cartelle">
+        <div class="cartriga"><span class="k">Adesso</span><span class="v">${esc(c.base)}</span></div>
+      </div>`:''}
+      <p class="hint">Puoi cambiarla quando vuoi dal tasto <b>Cartella Salvataggi</b>, in cima
+      alla finestra. I file che ci sono già restano dove sono.</p>
+    `,
+    [{label:'Chiudi'},
+     {label:'📁 Scegli la cartella…',primary:true,fn:async()=>{
+        const n=await IO.cartellaScegli();
+        if(!n) return false;                       // ha annullato: la finestra resta
+        if(n.errore){ toast(n.errore,'err'); return false; }
+        toast('Da ora si salva in: '+n.base,'ok');
+     }}],
+    null,'conx',()=>risolvi());
+  });
+}
+
+/* Il riquadro con cui si comincia. Niente nome da scrivere: quello lo chiede
+   «Nuovo», e solo a chi sta davvero creando un preventivo. */
+function dialogoAvvio(){
+  modal('',`
+    <p style="margin:0">Da dove vuoi partire?</p>
+    <p class="hint">Con <b>Nuovo</b> dai un nome al preventivo e l'app gli prepara cartella e
+    backup. Con <b>Carica Preventivo</b> apri un file dalla cartella dei salvataggi, con
+    <b>Recenti</b> uno degli ultimi su cui hai lavorato.</p>
+  `,
+  [{label:'✚ Nuovo',primary:true,fn:()=>{ setTimeout(()=>dialogoNome(true,true),50); }},
+   {label:'📂 Carica Preventivo',fn:()=>{ setTimeout(apriPreventivo,50); }},
+   {label:'🕘 Recenti',fn:()=>{ setTimeout(dialogoRecenti,50); }},
+   {label:'Chiudi'}],
+  null,'conx nomeapp');
 }
 
 /** applica il nome e, se si può, prepara subito cartella e file */
@@ -3207,9 +3272,14 @@ async function avvia(){
     }});
   }
 
-  /* Il nome si chiede subito: da lì nascono la cartella del preventivo e
-     quella dei backup. Nel browser non servirebbe a niente, e non si chiede. */
-  if(!apertoDaFuori && IO.desktop && !S.nome) setTimeout(()=>dialogoNome(true),250);
+  /* Si parte dal riquadro iniziale. Nel browser non servirebbe a niente — non
+     c'è nessuna cartella da scegliere e nessun file da aprire — e non si apre.
+     Aprendo un preventivo con un doppio clic non si apre nemmeno: quello che si
+     voleva vedere è già a video. */
+  if(!apertoDaFuori && IO.desktop) setTimeout(async()=>{
+    if(await daChiedereLaCartella()) await dialogoPrimaCartella();
+    dialogoAvvio();
+  },250);
   avviaBackupAutomatico();
 }
 
