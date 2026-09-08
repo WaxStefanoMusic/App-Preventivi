@@ -38,6 +38,14 @@ si calcolano da soli: `prezzo × quantità`, poi l'IVA della riga. I numeri si
 scrivono come vengono — `1.234,56`, `1234.56`, `1234,56` — e vengono riscritti
 in bella copia quando si esce dal campo.
 
+**Spostare una riga.** In fondo a ogni riga, prima della x, ci sono due frecce
+che la portano su e giù dentro la sua sezione. La stessa cosa si fa trascinandola
+col mouse: si afferra da un punto che non si scrive — le colonne dei conti, o la
+zona dei tasti — e la si posa sopra o sotto un'altra riga, che intanto mostra da
+che parte finirà. Nel preventivo complessivo non si sposta niente: lì le righe
+arrivano da sezioni diverse e l'ordine è quello dei TAB. Frecce e trascinamento
+restano a schermo: sulla carta e nelle esportazioni non compaiono.
+
 **Descrizione.** Il riquadro cresce con il testo; oltre le sei righe circa si
 ferma e il pulsante `⤢` diventa blu: premendolo si apre la descrizione in una
 finestra grande. Sulla carta viene stampata per intero.

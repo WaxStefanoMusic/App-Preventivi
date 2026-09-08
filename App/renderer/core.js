@@ -791,7 +791,7 @@ function vistaPreventivo(){
         <colgroup>
           ${conTab?'<col class="c-tab">':''}
           <col class="c-art"><col class="c-desc"><col class="c-prezzo"><col class="c-qta">
-          <col class="c-imp"><col class="c-iva"><col class="c-tot"><col class="c-az">
+          <col class="c-imp"><col class="c-iva"><col class="c-tot"><col class="c-az${complessivo?'':' larga'}">
         </colgroup>
         <thead><tr>
           ${conTab?'<th title="Sezione da cui arriva la riga">TAB</th>':''}
@@ -809,7 +809,7 @@ function vistaPreventivo(){
             ? (righeSemplificate().length
                 ? righeSemplificate().map(rigaSempliceHTML).join('')
                 : `<tr><td colspan="8" class="rigavuota">Nessuna sezione da riassumere.</td></tr>`)
-            : (righe.length?righe.map(r=>rigaHTML(r,complessivo)).join(''):
+            : (righe.length?righe.map((r,i)=>rigaHTML(r,complessivo,i,righe.length)).join(''):
               `<tr><td colspan="${conTab?9:8}" class="rigavuota">Nessuna voce. Premi «＋» qui sotto per iniziare.</td></tr>`)}
         </tbody>
       </table>
@@ -823,7 +823,7 @@ function vistaPreventivo(){
   </div>`;
 }
 
-function rigaHTML(r,complessivo){
+function rigaHTML(r,complessivo,indice,quante){
   const c=calcoloRiga(r);
   const sez = complessivo ? tabById(r.tabId) : null;
   const promo = r.promo!=null;         // in promo anche se il prezzo è ancora vuoto
@@ -854,7 +854,7 @@ function rigaHTML(r,complessivo){
     <td class="num calc" data-c="imponibile">${due(fmtNum(c.originale.imponibile), fmtNum(c.imponibile))}</td>
     <td class="cel-mezzo"><input class="cell-in num" data-k="iva" value="${r.iva===''?'':fmtQty(numIT(r.iva))}" placeholder="22" inputmode="decimal"></td>
     <td class="num calc" data-c="totale">${due(fmtEur(c.originale.totale), fmtEur(c.totale))}</td>
-    <td class="az"><button data-act="del" title="Elimina la riga">×</button></td>
+    <td class="az">${complessivo?'':`<button data-act="su" title="Sposta la riga in su"${indice===0?' disabled':''}>↑</button><button data-act="giu" title="Sposta la riga in giù"${indice===quante-1?' disabled':''}>↓</button>`}<button data-act="del" title="Elimina la riga">×</button></td>
   </tr>`;
 }
 
@@ -872,6 +872,35 @@ function rigaSempliceHTML(x){
     <td class="num calc">${fmtEur(x.totale)}</td>
     <td class="az"></td>
   </tr>`;
+}
+
+/* Le righe di tutte le sezioni stanno in un elenco solo, una dietro l'altra:
+   spostare una riga «in su» vuol dire scambiarla con quella che la precede
+   NELLA SUA sezione, non con quella che la precede nell'elenco — che potrebbe
+   appartenere a un'altra sezione e finirebbe per cambiare di posto pure lei. */
+let rigaTrascinata=null;
+
+function spostaRiga(id,verso){
+  const r=rigaById(id); if(!r) return;
+  const sorelle=S.righe.filter(x=>x.tabId===r.tabId);
+  const i=sorelle.indexOf(r), j=i+verso;
+  if(j<0||j>=sorelle.length) return;                 // già in cima o in fondo
+  const a=S.righe.indexOf(sorelle[i]), b=S.righe.indexOf(sorelle[j]);
+  S.righe[a]=sorelle[j]; S.righe[b]=sorelle[i];
+  tocca(); render();
+  $(`#corpo tr[data-id="${id}"]`)?.scrollIntoView({block:'nearest'});
+}
+
+/** posa la riga «da» sopra o sotto la riga «a», dentro la stessa sezione */
+function posaRiga(da,a,prima){
+  const rd=rigaById(da), ra=rigaById(a);
+  if(!rd||!ra||rd===ra||rd.tabId!==ra.tabId) return;
+  const senza=S.righe.filter(x=>x!==rd);
+  const dove=senza.indexOf(ra)+(prima?0:1);
+  senza.splice(dove,0,rd);
+  S.righe=senza;
+  tocca(); render();
+  $(`#corpo tr[data-id="${da}"]`)?.scrollIntoView({block:'nearest'});
 }
 
 function totaliHTML(T){
@@ -1255,11 +1284,58 @@ function legaVista(){
     const id=tr.dataset.id;
     if(b.dataset.act==='desc') dialogoDescrizione(id);
     if(b.dataset.act==='del')  eliminaRiga(id);
+    if(b.dataset.act==='su')   spostaRiga(id,-1);
+    if(b.dataset.act==='giu')  spostaRiga(id,+1);
     if(b.dataset.act==='vaitab'){
       const r=rigaById(id);
       if(r&&tabById(r.tabId)){ S.active=r.tabId; tocca(); render(); }
     }
   });
+
+  /* Trascinamento delle righe. La riga diventa trascinabile solo se il dito è
+     partito da un punto che non si scrive: premendo dentro una casella si deve
+     poter selezionare il testo, non portarsi via la riga. Nel complessivo non
+     si trascina niente: lì le righe arrivano da sezioni diverse e l'ordine è
+     quello dei TAB. */
+  if(S.active!==ID_TOT){
+    corpo.addEventListener('mousedown',e=>{
+      const tr=e.target.closest('tr[data-id]'); if(!tr) return;
+      tr.draggable = !e.target.closest('input,textarea,select,button,[contenteditable]');
+    });
+    corpo.addEventListener('dragstart',e=>{
+      const tr=e.target.closest('tr[data-id]'); if(!tr) return;
+      rigaTrascinata=tr.dataset.id;
+      tr.classList.add('sitrascina');
+      try{ e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain',rigaTrascinata); }catch(_){}
+    });
+    corpo.addEventListener('dragover',e=>{
+      const tr=e.target.closest('tr[data-id]');
+      if(!tr||!rigaTrascinata||tr.dataset.id===rigaTrascinata) return;
+      e.preventDefault();
+      /* la riga si posa sopra o sotto quella puntata, a seconda di dove sta il
+         mouse dentro di lei: è quello che si aspetta chi trascina */
+      const m=tr.getBoundingClientRect();
+      tr.classList.toggle('sopra', e.clientY < m.top+m.height/2);
+      tr.classList.toggle('sotto', e.clientY >= m.top+m.height/2);
+    });
+    corpo.addEventListener('dragleave',e=>{
+      const tr=e.target.closest('tr[data-id]');
+      if(tr) tr.classList.remove('sopra','sotto');
+    });
+    corpo.addEventListener('drop',e=>{
+      const tr=e.target.closest('tr[data-id]');
+      if(!tr||!rigaTrascinata) return;
+      e.preventDefault();
+      const m=tr.getBoundingClientRect();
+      const prima = e.clientY < m.top+m.height/2;
+      const da=rigaTrascinata; rigaTrascinata=null;
+      posaRiga(da,tr.dataset.id,prima);
+    });
+    corpo.addEventListener('dragend',()=>{
+      rigaTrascinata=null;
+      $$('#corpo tr').forEach(tr=>tr.classList.remove('sitrascina','sopra','sotto'));
+    });
+  }
 
   /* Ctrl+Invio aggiunge una riga: le mani restano sulla tastiera. */
   corpo.addEventListener('keydown', e=>{

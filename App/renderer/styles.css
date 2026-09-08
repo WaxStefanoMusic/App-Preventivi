@@ -313,6 +313,8 @@ table.voci th.num{text-align:right}
 .c-iva     {width:7%}
 .c-tot     {width:13%}
 .c-az      {width:32px}
+/* dove ci sono anche le frecce per spostare la riga serve più spazio */
+.c-az.larga{width:76px}
 
 /* Nel preventivo complessivo entra la colonna TAB: lo spazio lo mette la
    descrizione, che qui è comunque solo da rileggere — la si scrive nella
@@ -355,6 +357,17 @@ td.az button{
 }
 tr:hover td.az button,td.az button:focus{opacity:1}
 td.az button:hover{color:var(--critical);background:transparent}
+/* le frecce non cancellano niente: al passaggio del mouse non diventano rosse */
+td.az button[data-act="su"]:hover,
+td.az button[data-act="giu"]:hover{color:var(--accent)}
+td.az button:disabled{opacity:.18;cursor:default}
+tr:hover td.az button:disabled{opacity:.18}
+
+/* Trascinamento: la riga che si sta portando in giro sbiadisce, e quella su cui
+   si sta per posarla mostra da che parte finirà. */
+tr.sitrascina{opacity:.45}
+tr.sopra td{box-shadow:inset 0 2px 0 var(--accent)}
+tr.sotto td{box-shadow:inset 0 -2px 0 var(--accent)}
 /* Colonna TAB del preventivo complessivo: promemoria della sezione di
    provenienza, e scorciatoia per andarci. */
 td.tabsez{padding:3px 4px}
