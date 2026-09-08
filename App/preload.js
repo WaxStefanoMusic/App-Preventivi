@@ -31,6 +31,7 @@ contextBridge.exposeInMainWorld('preventivi', {
 
   // cartella e backup del singolo preventivo
   preventivoCartella:  (nome)     => ipcRenderer.invoke('preventivo:cartella', { nome }),
+  preventivoApriCartella:(o={})   => ipcRenderer.invoke('preventivo:apriCartella', o),
   preventivoApriBackup:(o={})     => ipcRenderer.invoke('preventivo:apriBackup', o),
   preventivoBackup:    (o={})     => ipcRenderer.invoke('preventivo:backup', o),
 

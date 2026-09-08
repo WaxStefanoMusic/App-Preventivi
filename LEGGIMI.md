@@ -125,7 +125,8 @@ vero, con la tabella tutta incorniciata e — soprattutto — **le formule dentr
 Cambiando un prezzo o una quantità dentro Excel, tutto il resto si aggiorna da
 solo — sconto e rate compresi.
 
-**Importa.** Accanto ad `Apri`. Porta dentro le **voci** di un foglio Excel
+**Importa.** Nel menu `File`, alla voce «Importa voci da Excel o da un preventivo…».
+Porta dentro le **voci** di un foglio Excel
 (`.xlsx`) o di un altro preventivo (`.json`), e **sostituisce** quelle della
 sezione in cui ti trovi — se ce n'erano, prima te lo chiede. A differenza di
 `Apri`, non tocca intestazione, dati cliente e data.

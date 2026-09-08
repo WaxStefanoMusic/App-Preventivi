@@ -2107,6 +2107,25 @@ async function dialogoCartella(){
 /* Il tasto Backup porta ai backup DI QUESTO preventivo: stanno nella sua
    cartella, non in un mucchio comune, e si aprono con un doppio clic perché
    hanno la stessa estensione del preventivo. */
+/* La cartella di QUESTO preventivo: quella che porta il suo nome, con dentro il
+   file e la sottocartella dei backup. Finché il preventivo non ha un nome quella
+   cartella non esiste ancora, e non si inventa: si offre di darglielo. */
+async function apriCartellaPreventivo(){
+  if(!IO.desktop)
+    return toast('Nel browser i file li tiene il browser: non c\'è una cartella da aprire','');
+  if(!filePath && !S.nome)
+    return modal('Cartella del preventivo',
+      `<p style="margin:0">Questo preventivo non ha ancora un nome, quindi non ha nemmeno una
+       cartella sua.</p>
+       <p class="hint">Dagli un nome: l'app crea la cartella con dentro il file e, accanto,
+       quella dei backup.</p>`,
+      [{label:'Chiudi'},{label:'Dai un nome e salva',primary:true,fn:()=>dialogoNome(true)}]);
+  const r=await IO.preventivoApriCartella({percorso:filePath,nome:S.nome});
+  if(r&&r.errore) return toast(r.errore,'err');
+  toast('Cartella di «'+nomeDocumento()+'»','ok');
+  return r;
+}
+
 async function dialogoBackup(){
   if(!IO.desktop){
     const r=await IO.backupCrea();
@@ -3052,6 +3071,7 @@ const IO = {
   async intestApriCartella(){ return false; },
   async apriPercorso(){ return null; },
   async preventivoCartella(){ return null; },
+  async preventivoApriCartella(){ return null; },
   async preventivoApriBackup(){ return null; },
   async preventivoBackup(){ return {errore:'non disponibile nel browser'}; },
   async recentiElenco(){ return []; },
@@ -3190,12 +3210,33 @@ function menuDom(ctx,x,y){
 }
 function chiudiMenuDom(){ $$('.menuctx').forEach(m=>m.remove()); }
 
+/* I tasti in cima hanno nomi lunghi — «Cartella Preventivo Corrente» — e su una
+   finestra media non ci starebbero: finirebbero fuori dallo schermo, tagliati,
+   senza nemmeno un segno che dica che ci sono. Invece di accorciare i nomi si
+   stringe la testata: prima corpo e imbottiture, poi, se non basta ancora,
+   restano le sole icone — e i nomi passano nei suggerimenti.
+   Si misura l'ultimo tasto, non «scrollWidth»: qui il traboccare è visibile,
+   e quel numero non lo racconterebbe. */
+function adattaTestata(){
+  const h=$('header.app'); if(!h) return;
+  const trabocca=()=>{
+    const u=h.lastElementChild; if(!u) return false;
+    return u.getBoundingClientRect().right > h.getBoundingClientRect().right-6;
+  };
+  h.classList.remove('stretta','icone');
+  if(!trabocca()) return;
+  h.classList.add('stretta');
+  if(!trabocca()) return;
+  h.classList.add('icone');
+}
+addEventListener('resize',adattaTestata);
+
 function legaTestata(){
   $('#btnNuovo').onclick   = nuovoPreventivo;
   $('#btnApri').onclick    = apriPreventivo;
   $('#btnRecenti').onclick = dialogoRecenti;
-  $('#btnImporta').onclick  = importaVoci;
   $('#btnCartella').onclick = dialogoCartella;
+  $('#btnCartellaPrev').onclick = apriCartellaPreventivo;
   $('#btnBackup').onclick   = dialogoBackup;
   const nomeDoc=$('#docname');
   // senza la funzione di mezzo, al dialogo arriverebbe l'evento del clic come
@@ -3204,6 +3245,7 @@ function legaTestata(){
   nomeDoc.onkeydown = e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); dialogoNome(); } };
   $('#btnSalva').onclick   = ()=>salvaPreventivo(false);
   $('#btnSalvaCome').onclick = ()=>salvaPreventivo(true);
+  adattaTestata();
   $('#btnTema').onclick    = ()=>{
     OPZ.theme = OPZ.theme==='dark'?'light':'dark';
     salvaOpzioni(); render();

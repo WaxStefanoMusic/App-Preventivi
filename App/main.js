@@ -544,6 +544,18 @@ ipcMain.handle('preventivo:cartella', async (_e, { nome } = {}) => {
   } catch (e) { return { errore: e.message }; }
 });
 
+/** la cartella del preventivo aperto, aperta in Esplora file */
+ipcMain.handle('preventivo:apriCartella', async (_e, { percorso, nome } = {}) => {
+  const pulito = nomeFileSicuro(nome);
+  /* senza percorso e senza nome non c'è nessuna cartella di preventivo: si
+     tornerebbe indietro fino a quella generale, che non è quello che si chiede */
+  if (!percorso && !pulito) return { errore: 'Il preventivo non ha ancora un nome' };
+  const dir = percorso ? path.dirname(percorso) : cartellaDiPreventivo(pulito);
+  try { fs.mkdirSync(dir, { recursive: true }); } catch (_) {}
+  await shell.openPath(dir);
+  return { ok: true, cartella: dir };
+});
+
 /** la cartella dei backup del preventivo aperto, aperta in Esplora file */
 ipcMain.handle('preventivo:apriBackup', async (_e, { percorso, nome } = {}) => {
   let dir = percorso ? path.join(path.dirname(percorso), CARTELLA_BACKUP)

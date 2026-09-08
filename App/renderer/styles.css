@@ -127,6 +127,17 @@ header.app .ic{display:none}
   .brand small{display:none}
   .docname{max-width:18ch;font-size:12px}
 }
+/* Gli stessi due gradini, ma decisi misurando invece che a occhio: li mette
+   «adattaTestata» quando i tasti non ci stanno in larghezza. */
+header.app.stretta{gap:8px;padding:8px 12px}
+header.app.stretta button{font-size:11.5px;padding:4px 7px;gap:4px}
+header.app.stretta .brand small{display:none}
+header.app.stretta .docname{max-width:18ch;font-size:12px}
+header.app.icone .et{display:none}
+header.app.icone .ic{display:inline}
+header.app.icone button{font-size:14px;padding:4px 8px}
+header.app.icone .docname{max-width:14ch}
+
 /* sotto questa misura restano le sole icone: i nomi sono nei suggerimenti */
 @media (max-width:980px){
   header.app .et{display:none}
