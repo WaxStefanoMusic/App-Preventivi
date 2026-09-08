@@ -277,9 +277,9 @@ function buildMenu() {
     {
       label: 'File',
       submenu: [
-        vociMenu('Nuovo preventivo', 'nuovo', 'CommandOrControl+N'),
-        vociMenu('Apri…', 'apri', 'CommandOrControl+O'),
-        vociMenu('Importa voci da Excel o da un preventivo…', 'importa'),
+        vociMenu('Nuovo', 'nuovo', 'CommandOrControl+N'),
+        vociMenu('Apri', 'apri', 'CommandOrControl+O'),
+        vociMenu('Recenti', 'recenti'),
         { type: 'separator' },
         vociMenu('Salva', 'salva', 'CommandOrControl+S'),
         vociMenu('Salva con nome…', 'salvaCome', 'CommandOrControl+Shift+S'),

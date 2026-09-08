@@ -143,7 +143,7 @@ if (window.preventivi && window.preventivi.isDesktop) (function () {
     P.onMenu(azione => {
       if (azione === 'nuovo') nuovoPreventivo();
       if (azione === 'apri') apriPreventivo();
-      if (azione === 'importa') importaVoci();
+      if (azione === 'recenti') dialogoRecenti();
       if (azione === 'salva') salvaPreventivo(false);
       if (azione === 'salvaCome') salvaPreventivo(true);
       if (azione === 'anteprima') anteprimaStampa();

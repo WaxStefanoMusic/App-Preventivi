@@ -125,21 +125,6 @@ vero, con la tabella tutta incorniciata e — soprattutto — **le formule dentr
 Cambiando un prezzo o una quantità dentro Excel, tutto il resto si aggiorna da
 solo — sconto e rate compresi.
 
-**Importa.** Nel menu `File`, alla voce «Importa voci da Excel o da un preventivo…».
-Porta dentro le **voci** di un foglio Excel
-(`.xlsx`) o di un altro preventivo (`.json`), e **sostituisce** quelle della
-sezione in cui ti trovi — se ce n'erano, prima te lo chiede. A differenza di
-`Apri`, non tocca intestazione, dati cliente e data.
-
-Dal foglio Excel servono le colonne, riconosciute dal nome in una riga qualsiasi
-delle prime quaranta: `Articolo` (o Codice, Rif, Voce), `Descrizione`,
-`Prezzo unitario` (o Prezzo, Unitario), `Quantità` (o Qtà, Q.tà) e `IVA`
-(o Aliquota). Maiuscole, accenti, `€` e `%` non contano. Imponibile e Totale non
-si importano: li ricalcola l'app. Le righe dei totali vengono saltate da sole.
-
-Importando dal TAB complessivo — che non è un contenitore ma la somma degli
-altri — le voci finiscono nella prima sezione, e il messaggio dice in quale.
-
 **Da dove si parte.** Al primissimo avvio dopo l'installazione l'app chiede una
 volta sola dove tenere preventivi, intestazioni e backup; chi preferisce farlo
 dopo chiude e se ne occupa dal tasto **Cartella Salvataggi**, in cima.

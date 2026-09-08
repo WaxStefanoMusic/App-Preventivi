@@ -73,7 +73,7 @@ contextBridge.exposeInMainWorld('preventivi', {
 
   // voci di menu
   onMenu: (cb) => {
-    const azioni = ['nuovo','apri','importa','salva','salvaCome','anteprima','stampa','pdf','excel','intestazione','cliente','aspetto'];
+    const azioni = ['nuovo','apri','recenti','salva','salvaCome','anteprima','stampa','pdf','excel','intestazione','cliente','aspetto'];
     const off = azioni.map(a => on('menu:' + a, () => cb(a)));
     return () => off.forEach(f => f());
   },
