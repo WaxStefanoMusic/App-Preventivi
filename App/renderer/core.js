@@ -113,7 +113,7 @@ let INTEST_PREDEF = '';
 /* zoom 0 = automatico; ambito = che cosa finisce in stampa e nelle esportazioni:
    «tutte», «tab» (solo quella aperta) o «scelte», e allora valgono le sezioni
    segnate in OPZ.scelte */
-let OPZ = { theme:'light', orizzontale:false, zoom:0, ambito:'tab', scelte:[] };
+let OPZ = { theme:'light', orizzontale:false, zoom:0, ambito:'tab', scelte:[], totInFondo:false };
 
 /** percorso del file aperto e se ci sono modifiche non salvate */
 let filePath = null, modificato = false;
@@ -1728,26 +1728,39 @@ function sceltePulite(){
   return (OPZ.scelte||[]).filter(id=>esistenti.has(id));
 }
 
+/* Il complessivo apre o chiude il documento: c'è chi mette davanti il totale,
+   perché è la cifra che il cliente cerca, e chi lo tiene per ultimo, dopo aver
+   mostrato da che cosa nasce. Vale per anteprima, stampa, PDF ed Excel — che
+   partono tutti da questo stesso elenco. */
+function ordinaTot(ids){
+  if(!ids.includes(ID_TOT)) return ids;
+  const altri=ids.filter(id=>id!==ID_TOT);
+  return OPZ.totInFondo ? [...altri,ID_TOT] : [ID_TOT,...altri];
+}
+
 function ambitoTabs(){
   const sezioni=tabStampabili().map(t=>t.id);
   if(OPZ.ambito==='scelte'){
     const segnate=new Set(sceltePulite());
     const scelte=sezioni.filter(id=>segnate.has(id));   // nell'ordine dei TAB
-    if(scelte.length) return scelte;
+    if(scelte.length) return ordinaTot(scelte);
     // niente di segnato: si ripiega sulla sezione aperta, che è sempre qualcosa
     return [S.active];
   }
   if(OPZ.ambito!=='tutte') return [S.active];
-  return sezioni.length?sezioni:[S.active];
+  return sezioni.length?ordinaTot(sezioni):[S.active];
 }
 
 /** in parole: che cosa verrà stampato — serve al suggerimento del tasto */
 function descrizioneAmbito(){
   const che='Che cosa finisce in anteprima, stampa, PDF ed Excel: ';
-  if(OPZ.ambito==='tutte') return che+'il preventivo complessivo e tutte le sezioni.';
+  const dove = ambitoTabs().includes(ID_TOT)
+    ? ' Il preventivo complessivo va '+(OPZ.totInFondo?'in fondo.':'in cima.')
+    : '';
+  if(OPZ.ambito==='tutte') return che+'il preventivo complessivo e tutte le sezioni.'+dove;
   if(OPZ.ambito==='scelte'){
     const nomi=ambitoTabs().map(id=>(tabById(id)||{}).name).filter(Boolean);
-    return che+(nomi.length>1?'le sezioni segnate ('+nomi.join(', ')+').':nomi[0]||'la sezione aperta.');
+    return che+(nomi.length>1?'le sezioni segnate ('+nomi.join(', ')+').':nomi[0]||'la sezione aperta.')+dove;
   }
   return che+'solo la sezione aperta.';
 }
@@ -1771,7 +1784,11 @@ function menuSeleziona(tasto){
     `<div class="divisore"></div>`+
     (sezioni.length
       ? sezioni.map(t=>`<label class="spunta"><input type="checkbox" data-id="${esc(t.id)}"${attive.has(t.id)?' checked':''}><span>${esc(nomeVoce(t))}</span></label>`).join('')
-      : `<div class="vuoto">Nessuna sezione</div>`);
+      : `<div class="vuoto">Nessuna sezione</div>`)+
+    `<div class="divisore"></div>`+
+    `<div class="titolo">Preventivo Complessivo</div>`+
+    `<button data-p="cima"${OPZ.totInFondo?'':' class="segnata"'}>In cima</button>`+
+    `<button data-p="fondo"${OPZ.totInFondo?' class="segnata"':''}>In fondo</button>`;
   document.body.appendChild(m);
 
   // sotto al tasto, e se non ci sta si sposta quanto basta per restare a video
@@ -1779,6 +1796,16 @@ function menuSeleziona(tasto){
   collocaFluttuante(m,r.left,r.bottom+6);
 
   m.addEventListener('click',ev=>{
+    /* Dove va il complessivo non chiude il menu: è una scelta che si prende
+       guardando l'elenco delle sezioni, e spesso si cambia idea subito. */
+    const dove=ev.target.closest('button[data-p]');
+    if(dove){
+      OPZ.totInFondo = dove.dataset.p==='fondo';
+      salvaOpzioni();
+      m.querySelectorAll('button[data-p]').forEach(b=>b.classList.toggle('segnata',b===dove));
+      const t=$('#btnSeleziona'); if(t) t.title=descrizioneAmbito();
+      return;
+    }
     const scelta=ev.target.closest('button[data-m]');
     if(!scelta) return;
     OPZ.ambito=scelta.dataset.m; salvaOpzioni();
