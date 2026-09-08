@@ -1292,11 +1292,7 @@ function modal(titolo,corpoHTML,bottoni=[{label:'Chiudi'}],onOpen,cls='',onClose
   /* La «x» in alto a sinistra si mette solo dove serve poter chiudere senza
      rispondere: la si chiede con la classe «conx». */
   const conX = /\bconx\b/.test(cls||'');
-  /* «nomeapp» scrive «App Preventivi» in alto a destra, prima della crocetta:
-     serve alla finestra che si apre per prima, che altrimenti non direbbe
-     nemmeno di che programma è. */
-  const conNome = /\bnomeapp\b/.test(cls||'');
-  m.innerHTML=`<h3><span>${esc(titolo)}</span>${conNome?`<span class="nomeapp">App Preventivi</span>`:''}${conX?`<button class="chiudix" title="Chiudi">×</button>`:''}</h3>
+  m.innerHTML=`<h3><span>${esc(titolo)}</span>${conX?`<button class="chiudix" title="Chiudi">×</button>`:''}</h3>
     <div class="body">${corpoHTML}</div>
     <div class="foot">${bottoni.map((b,i)=>`<button data-i="${i}" class="${b.primary?'primary':b.danger?'danger':''}">${esc(b.label)}</button>`).join('')}</div>`;
   ov.hidden=false;
@@ -2287,7 +2283,7 @@ function dialogoPrimaCartella(){
 /* Il riquadro con cui si comincia. Niente nome da scrivere: quello lo chiede
    «Nuovo», e solo a chi sta davvero creando un preventivo. */
 function dialogoAvvio(){
-  modal('',`
+  modal('App Preventivi',`
     <p style="margin:0">Da dove vuoi partire?</p>
     <p class="hint">Con <b>Nuovo</b> dai un nome al preventivo e l'app gli prepara cartella e
     backup. Con <b>Carica Preventivo</b> apri un file dalla cartella dei salvataggi, con
@@ -2297,7 +2293,7 @@ function dialogoAvvio(){
    {label:'📂 Carica Preventivo',fn:()=>{ setTimeout(apriPreventivo,50); }},
    {label:'🕘 Recenti',fn:()=>{ setTimeout(dialogoRecenti,50); }},
    {label:'Chiudi'}],
-  null,'conx nomeapp');
+  null,'conx');
 }
 
 /** applica il nome e, se si può, prepara subito cartella e file */
