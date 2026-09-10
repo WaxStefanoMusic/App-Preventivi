@@ -69,6 +69,7 @@ if (window.preventivi && window.preventivi.isDesktop) (function () {
   IO.apriPercorso         = (p) => P.apriPercorso(p);
   IO.preventivoCartella   = (nome) => P.preventivoCartella(nome);
   IO.preventivoApriCartella = (o) => P.preventivoApriCartella(o);
+  IO.nuovaIstanza = (percorso) => P.nuovaIstanza(percorso);
   IO.preventivoApriBackup = (o) => P.preventivoApriBackup(o);
   IO.preventivoBackup     = (o) => P.preventivoBackup(o);
   IO.recentiElenco        = () => P.recentiElenco();
@@ -144,6 +145,7 @@ if (window.preventivi && window.preventivi.isDesktop) (function () {
       if (azione === 'nuovo') nuovoPreventivo();
       if (azione === 'apri') apriPreventivo();
       if (azione === 'recenti') dialogoRecenti();
+      if (azione === 'importa') dialogoImporta();
       if (azione === 'salva') salvaPreventivo(false);
       if (azione === 'salvaCome') salvaPreventivo(true);
       if (azione === 'anteprima') anteprimaStampa();

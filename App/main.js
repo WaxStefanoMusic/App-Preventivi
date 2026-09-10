@@ -11,7 +11,7 @@ const { app, BrowserWindow, ipcMain, dialog, shell, Menu, screen } = require('el
 const path = require('path');
 const fs = require('fs');
 const fsp = require('fs/promises');
-const { execFile } = require('child_process');
+const { execFile, spawn } = require('child_process');
 
 /* Deve precedere qualsiasi getPath('userData'): fissa la cartella dati sia in
    sviluppo sia da eseguibile installato. */
@@ -280,6 +280,7 @@ function buildMenu() {
         vociMenu('Nuovo', 'nuovo', 'CommandOrControl+N'),
         vociMenu('Apri', 'apri', 'CommandOrControl+O'),
         vociMenu('Recenti', 'recenti'),
+        vociMenu('Importa', 'importa'),
         { type: 'separator' },
         vociMenu('Salva', 'salva', 'CommandOrControl+S'),
         vociMenu('Salva con nome…', 'salvaCome', 'CommandOrControl+Shift+S'),
@@ -1001,6 +1002,19 @@ function fileDaRiga(argv) {
 }
 let fileDaAprire = fileDaRiga(process.argv);
 
+/* Un'altra finestra dell'app, eventualmente con dentro un preventivo. Si
+   riavvia l'eseguibile: in sviluppo davanti va il percorso del progetto, che
+   quando l'app è impacchettata è già dentro l'eseguibile. */
+ipcMain.handle('app:nuovaIstanza', (_e, { percorso } = {}) => {
+  try {
+    const argomenti = app.isPackaged ? [] : [app.getAppPath()];
+    if (percorso) argomenti.push(percorso);
+    const figlio = spawn(process.execPath, argomenti, { detached: true, stdio: 'ignore' });
+    figlio.unref();
+    return { ok: true };
+  } catch (e) { return { errore: e.message }; }
+});
+
 ipcMain.handle('avvio:fileDaAprire', async () => {
   if (!fileDaAprire) return null;
   const p = fileDaAprire; fileDaAprire = null;
@@ -1011,14 +1025,12 @@ ipcMain.handle('avvio:fileDaAprire', async () => {
   } catch (_) { return null; }
 });
 
-if (!app.requestSingleInstanceLock()) {
-  app.quit();
-} else {
-  app.on('second-instance', (_e, argv) => {
-    const p = fileDaRiga(argv);
-    if (p) send('file:apriQuesto', p);
-    if (win) { if (win.isMinimized()) win.restore(); win.focus(); }
-  });
+/* L'app si apre quante volte si vuole, e ogni finestra lavora per conto suo:
+   capita di tenere aperto un preventivo mentre se ne guarda un altro, e prima
+   la seconda apertura si limitava a riportare in primo piano la prima.
+   Le finestre condividono solo la cartella dei salvataggi e le preferenze,
+   che si scrivono di rado; il preventivo aperto, quello no: è di chi lo tiene. */
+{
   app.whenReady().then(() => {
     annotaCartellaPerDisinstallazione();
     createWindow();

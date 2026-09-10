@@ -73,7 +73,7 @@ contextBridge.exposeInMainWorld('preventivi', {
 
   // voci di menu
   onMenu: (cb) => {
-    const azioni = ['nuovo','apri','recenti','salva','salvaCome','anteprima','stampa','pdf','excel','intestazione','cliente','aspetto'];
+    const azioni = ['nuovo','apri','recenti','importa','salva','salvaCome','anteprima','stampa','pdf','excel','intestazione','cliente','aspetto'];
     const off = azioni.map(a => on('menu:' + a, () => cb(a)));
     return () => off.forEach(f => f());
   },
@@ -83,5 +83,6 @@ contextBridge.exposeInMainWorld('preventivi', {
   chiusuraProcedi: ()   => ipcRenderer.send('chiusura:procedi'),
   onChiusuraSalva: (cb) => on('chiusura:salva', cb),
 
+  nuovaIstanza: (percorso) => ipcRenderer.invoke('app:nuovaIstanza', { percorso }),
   info: () => ipcRenderer.invoke('app:info'),
 });

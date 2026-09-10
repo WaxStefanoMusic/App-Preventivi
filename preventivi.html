@@ -4256,6 +4256,88 @@ async function salvaPreventivo(comeNuovo){
     toast('Preventivo salvato','ok');
   }catch(e){ toast('Salvataggio non riuscito: '+e.message,'err'); }
 }
+/* ==============================================================================
+   IMPORTA UN ALTRO PREVENTIVO
+
+   Si sceglie un preventivo salvato e si decide che cosa farne:
+
+   «Implementa» lo porta dentro a questo — una sezione nuova per ogni sezione
+   che ha, con le sue voci e le sue rate — e il preventivo aperto resta dov'è,
+   solo più grande. Serve quando un lavoro nasce dall'unione di due preventivi
+   già fatti.
+
+   «Nuova Istanza» lo apre in un'altra finestra dell'app, che vive per conto
+   suo: quando i due preventivi devono restare due, ma li si vuole guardare
+   insieme.
+   ============================================================================== */
+async function dialogoImporta(){
+  if(!IO.desktop) return toast('Vale per l\'app installata','');
+  let f=null;
+  try{ f=await IO.apri(); }catch(e){ return toast('Apertura non riuscita: '+e.message,'err'); }
+  if(!f) return;                                  // ha annullato la scelta del file
+
+  let doc=null;
+  try{
+    const d=JSON.parse(f.contenuto);
+    doc=d.documento||d;
+    if(!doc||!Array.isArray(doc.tabs)) throw new Error('File non riconosciuto');
+  }catch(e){ return toast('Non è un preventivo che so leggere: '+e.message,'err'); }
+
+  const sezioni=doc.tabs.filter(t=>t.type==='voci');
+  const righeDelDoc=Array.isArray(doc.righe)?doc.righe:[];
+  const quante=t=>righeDelDoc.filter(r=>r.tabId===t.id).length;
+  const nome=doc.nome||nomeDaPercorso(f.percorso);
+
+  modal('Importa',`
+    <p style="margin:0">Da <b>${esc(nome)}</b>:</p>
+    <div class="cartelle">
+      ${sezioni.length
+        ? sezioni.map(t=>`<div class="cartriga"><span class="k">${esc(t.icon||'📄')} ${esc(t.name)}</span><span class="v">${quante(t)} voci</span></div>`).join('')
+        : `<div class="cartriga"><span class="k">Nessuna sezione</span><span class="v"></span></div>`}
+    </div>
+    <p class="hint"><b>Implementa</b> aggiunge queste sezioni al preventivo aperto, con le loro
+    voci e le loro rate: quello che hai adesso resta dov'è.<br>
+    <b>Nuova Istanza</b> lo apre in un'altra finestra, che lavora per conto suo.</p>
+  `,
+  [{label:'Implementa',primary:true,fn:()=>{ implementaDocumento(doc,nome); }},
+   {label:'Nuova Istanza',fn:async()=>{
+      const r=await IO.nuovaIstanza?.(f.percorso);
+      if(r&&r.errore) toast('Non riesco ad aprire un\'altra finestra: '+r.errore,'err');
+      else toast('Aperto in un\'altra finestra','ok');
+   }},
+   {label:'Chiudi'}],
+  null,'conx');
+}
+
+/* Le sezioni del preventivo scelto entrano in questo, una per una. Gli
+   identificativi si rifanno tutti: due preventivi nati dallo stesso file
+   avrebbero le stesse sigle, e le righe finirebbero nella sezione sbagliata. */
+function implementaDocumento(doc,nome){
+  const sezioni=doc.tabs.filter(t=>t.type==='voci');
+  if(!sezioni.length) return toast('Quel preventivo non ha sezioni da portare dentro','err');
+  const righeDelDoc=Array.isArray(doc.righe)?doc.righe:[];
+  const rateDelDoc=migraRate(doc);
+  let voci=0;
+  for(const t of sezioni){
+    const nuovo={id:'s'+uid(), type:'voci', name:t.name, icon:t.icon||'📄'};
+    S.tabs.push(nuovo);
+    if(concordatoAttivo()) S.concordati[nuovo.id]='';
+    for(const r of righeDelDoc.filter(x=>x.tabId===t.id)){
+      S.righe.push(Object.assign({},r,{id:uid(), tabId:nuovo.id}));
+      voci++;
+    }
+    const rate=rateDelDoc[t.id];
+    S.rate[nuovo.id] = Array.isArray(rate)
+      ? rate.map(x=>Object.assign({},x,{id:uid()}))
+      : RATE_INIZIALI();
+    S.active=nuovo.id;
+  }
+  S.righe=migraPromo(S.righe);
+  tocca(); render();
+  toast('Portate dentro '+sezioni.length+(sezioni.length===1?' sezione':' sezioni')+
+        ' da «'+nome+'» ('+voci+(voci===1?' voce':' voci')+')','ok');
+}
+
 async function apriPreventivo(){
   try{
     const f=await IO.apri();
