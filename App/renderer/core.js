@@ -92,6 +92,10 @@ const NUOVO = () => ({
   /* Complessivo semplificato: al posto di tutte le voci, una riga per
      sezione. È una scelta di QUESTO preventivo, quindi va nel file. */
   semplificato:false,
+  /* La nota di ogni sezione: un promemoria per chi scrive il preventivo.
+     Di suo NON si stampa — è la ragione per cui esiste, appuntarsi una cosa
+     senza che il cliente la legga — e ci entra solo con la spunta. */
+  note:{},
   /* Sezioni tenute FUORI dal complessivo. Restano dove sono, con i loro
      articoli e i loro totali: è il complessivo che non le conta — serve quando
      una sezione è un'alternativa, o un lavoro da quotare a parte. */
@@ -486,6 +490,18 @@ const VOCI=[
   {id:'cliente',nome:'Dati del cliente e data',dim:'--t-cliente',stampa:['.st-cliente','.st-data']},
 ];
 
+/* La nota della sezione. Il complessivo non ne ha una: lì non si scrive
+   niente, è la somma di quello che sta altrove. */
+const notaDi = tabId => (S.note && S.note[tabId]) || {testo:'',stampa:false};
+const notaDaStampare = tabId => {
+  const n=notaDi(tabId);
+  return (tabId!==ID_TOT && n.stampa && String(n.testo).trim()) ? String(n.testo) : '';
+};
+function scriviNota(tabId,campi){
+  if(!S.note) S.note={};
+  S.note[tabId]=Object.assign({testo:'',stampa:false},S.note[tabId],campi);
+}
+
 const aspettoDi = id => ASPETTO[id] || {};
 /** l'etichetta di una voce: quella scelta qui se c'è, altrimenti la solita */
 const voceTesto = (id,predefinito) => {
@@ -820,6 +836,7 @@ function vistaPreventivo(){
     </div>`}
 
     <div class="totalibox noprint" id="riquadroTotali">${totaliHTML(T)}</div>
+    ${complessivo?'':notaHTML()}
   </div>`;
 }
 
@@ -860,6 +877,25 @@ function rigaHTML(r,complessivo,indice,quante){
 
 /* La riga di una sezione. Non si scrive dentro: sono conti già fatti, che si
    cambiano andando nella sezione — ed è quello che fa il nome, cliccandolo. */
+/* La nota sta in fondo al foglio e fuori dalle colonne delle rate: è un testo
+   lungo, non una voce da incolonnare. Si comporta come la Descrizione — cresce
+   con quello che si scrive e si apre in grande — e ha accanto la spunta che
+   decide se finire sulla carta. */
+function notaHTML(){
+  const n=notaDi(S.active);
+  return `<div class="notasez noprint">
+    <span class="et">Nota</span>
+    <div class="descbox">
+      <textarea id="notaTesto" class="cell-in" rows="1"
+        placeholder="Nota o promemoria: resta fuori dal preventivo finché non la spunti">${esc(n.testo)}</textarea>
+      <button class="descbtn" id="notaGrande" title="Apri la nota in una finestra">⤢</button>
+    </div>
+    <label class="notaspunta" title="Spunta per inserire nella stampa">
+      <input type="checkbox" id="notaStampa"${n.stampa?' checked':''}>
+    </label>
+  </div>`;
+}
+
 function rigaSempliceHTML(x){
   return `<tr class="semplice" data-tab="${esc(x.tabId)}">
     <td class="cel-art"></td>
@@ -1236,6 +1272,14 @@ function legaVista(){
   const sel=$('#btnSeleziona');
   if(sel) sel.onclick=e=>{ e.stopPropagation(); menuSeleziona(sel); };
 
+  const nota=$('#notaTesto');
+  if(nota){
+    adattaDescrizione(nota);
+    nota.oninput=()=>{ scriviNota(S.active,{testo:nota.value}); adattaDescrizione(nota); tocca(); };
+    $('#notaGrande').onclick=()=>dialogoNota();
+    $('#notaStampa').onchange=e=>{ scriviNota(S.active,{stampa:e.target.checked}); tocca(); };
+  }
+
   const sezTot=$('#btnSezioniTot');
   if(sezTot) sezTot.onclick=e=>{ e.stopPropagation(); menuSezioniTotale(sezTot); };
   adattaBarra();
@@ -1421,6 +1465,25 @@ function dialogoDescrizione(idRiga){
       }
     }}],
     ()=>{ const t=$('#mDesc'); t.focus(); t.setSelectionRange(t.value.length,t.value.length); },
+    'wide');
+}
+
+/* --- la nota della sezione, in grande --- */
+function dialogoNota(){
+  const t=tabCorrente();
+  const n=notaDi(S.active);
+  modal('Nota — '+(t.name||'sezione'),
+    `<textarea id="mNota" class="grande" placeholder="Scrivi qui la nota, quanto ti serve.">${esc(n.testo)}</textarea>
+     <p class="hint">Di suo questo testo <b>non</b> finisce nel preventivo: ci entra solo se spunti la
+     casella accanto alla nota. È un promemoria tuo — quello che il cliente deve leggere va nella
+     descrizione delle voci.</p>`,
+    [{label:'Annulla'},{label:'Salva',primary:true,fn:()=>{
+      scriviNota(S.active,{testo:$('#mNota').value});
+      tocca();
+      const campo=$('#notaTesto');
+      if(campo){ campo.value=notaDi(S.active).testo; adattaDescrizione(campo); }
+    }}],
+    ()=>{ const c=$('#mNota'); c.focus(); c.setSelectionRange(c.value.length,c.value.length); },
     'wide');
 }
 
@@ -2114,6 +2177,11 @@ function foglioStampaHTML(tabId){
           <td class="v" colspan="2">${fmtEur(importoAcconto(a,t.id))}</td>
         </tr>`).join('')}
       </tbody>
+      <!-- La nota chiude il foglio, sotto le rate: è l'ultima cosa che si
+           legge, e non si intromette fra i conti. Compare solo se spuntata. -->
+      ${notaDaStampare(t.id)
+        ? `<tbody class="st-nota-corpo"><tr><td colspan="7" class="st-nota"><span class="et">NOTA</span><span class="tx">${esc(notaDaStampare(t.id))}</span></td></tr></tbody>`
+        : ''}
     </table>`;
 }
 
@@ -2674,6 +2742,15 @@ function foglioXlsx(tabId,primo){
       merge.push(`<mergeCell ref="${RIF(1,r)}:${RIF(4,r)}"/>`);
       r++;
     }
+  }
+
+  // la nota, se è stata spuntata per la stampa
+  const testoNota=notaDaStampare(t.id);
+  if(testoNota){
+    r++;
+    add(cellaTesto(0,r,'NOTA',23), cellaTesto(1,r,testoNota,14));
+    merge.push(`<mergeCell ref="${RIF(1,r)}:${RIF(6,r)}"/>`);
+    r++;
   }
 
   const larghezze=[16,54,17,11,16,8,16]
