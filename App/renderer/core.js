@@ -371,6 +371,14 @@ const percCorta = p => fmtQty(cent(numIT(p)));
 const percEsatta = p => String(numIT(p)).replace('.',',');
 
 const accontoRitoccato = (a,tabId) => !!(a && a.sez && tabId && a.sez[tabId]!=null);
+
+/* Una rata «fissata» è una rata su cui l'utente ha scritto: la sua cifra è una
+   decisione, non un calcolo, e il pareggio non deve spostarla. Scrivendo 4.000
+   sulla prima e 100 sulla seconda, quei due numeri restano lì: a trovarsi il
+   suo importo è la terza, che nessuno ha ancora toccato. */
+const rataFissata = (a,tabId) => !!(a && a.fissa && a.fissa[tabId]);
+function fissaRata(a,tabId){ (a.fissa || (a.fissa={}))[tabId]=true; }
+function liberaRate(tabId){ for(const a of S.acconti) if(a.fissa) delete a.fissa[tabId]; }
 /** true se in questa sezione almeno una rata è stata decisa a mano */
 const sezioneRitoccata = tabId => tabId!==ID_TOT && S.acconti.some(a=>accontoRitoccato(a,tabId));
 /* Nel complessivo la domanda diventa un'altra: c'è QUALCHE sezione decisa a
@@ -996,6 +1004,12 @@ function accontiDelFoglio(tabId){
   return S.acconti.map(a=>({nome:a.nome, perc:percMostrata(a,tabId), importo:importoAcconto(a,tabId)}));
 }
 
+/* Quelle che finiscono sul foglio: le rate da zero euro no. Una sezione che non
+   usa la terza rata si ritroverebbe stampata una riga «ACCONTO — 0,00 €», che
+   al cliente non dice niente e sembra un errore. A schermo restano tutte,
+   perché è lì che si scrivono. */
+const accontiDaStampare = tabId => accontiDelFoglio(tabId).filter(x=>cent(x.importo)!==0);
+
 /* Nel complessivo l'importo si legge e basta: lì è una somma, e per cambiarlo
    si va nella sezione che lo determina. Nelle sezioni invece si scrive, perché
    spesso l'accordo è «2.150 €» e non «il 43,72%». */
@@ -1104,6 +1118,9 @@ function legaConcordato(){
       if(!a.sez) continue;
       if(S.active===ID_TOT) delete a.sez; else delete a.sez[S.active];
     }
+    /* tornando al predefinito le rate smettono anche di essere «scritte a
+       mano»: da qui in avanti si lasciano di nuovo pareggiare */
+    if(S.active===ID_TOT){ for(const a of S.acconti) delete a.fissa; } else liberaRate(S.active);
     tocca(); aggiornaTotali();
   };
 
@@ -1118,6 +1135,7 @@ function legaConcordato(){
        predefinita se si sta nel complessivo. Poi le ALTRE rate della stessa
        sezione si aggiustano da sé per fare 100. */
     const scritta=valore=>{
+      fissaRata(a,S.active);
       impostaPerc(a,S.active,valore);
       bilanciaAcconti(indice,S.active);
       riscriviPercentuali(perc);
@@ -1143,6 +1161,7 @@ function legaConcordato(){
        in poi è una rata come le altre, e il complessivo se ne accorge. */
     if(imp){
       const daImporto=()=>{
+        fissaRata(a,S.active);
         const base=baseAcconti(S.active);
         const quota = base ? numIT(imp.value)*100/base : 0;
         impostaPerc(a,S.active,percPiena(Math.max(0,Math.min(100,quota))));
@@ -1187,10 +1206,14 @@ function bilanciaAcconti(i,tabId){
    differenza la prende la prima che sopra di lei ha qualcosa da cedere. */
 function pareggiaAcconti(tabId,escluso){
   const n=S.acconti.length;
+  /* Se sono state scritte a mano TUTTE le altre non c'è dove mettere la
+     differenza: le rate non fanno 100 e l'avviso sotto al riquadro lo dice.
+     Meglio un avviso che una cifra cambiata alle spalle di chi l'ha scritta. */
   const val = k => Math.max(0,numIT(percAcconto(S.acconti[k],tabId)));
   let differenza = 100 - S.acconti.reduce((somma,_,k)=>somma+val(k),0);
   for(let k=n-1; k>=0 && Math.abs(differenza)>1e-9; k--){
     if(k===escluso) continue;
+    if(rataFissata(S.acconti[k],tabId)) continue;   // scritta a mano: non si tocca
     const attuale=val(k);
     const nuovo=Math.max(0,attuale+differenza);
     if(nuovo===attuale) continue;                // già a zero e c'è da togliere: si sale
@@ -2016,6 +2039,7 @@ function menuSeleziona(tasto){
 function staccaAccontiDi(tabId){
   for(const a of S.acconti) impostaPerc(a,tabId,percAcconto(a,tabId));
 }
+
 function riattaccaAccontiDi(tabId){
   for(const a of S.acconti)
     if(a.sez && a.sez[tabId]!=null && numIT(a.sez[tabId])===numIT(a.perc)) delete a.sez[tabId];
@@ -2205,7 +2229,7 @@ function foglioStampaHTML(tabId){
         <tr class="v-ivato${conc?'':' finale'}"><td class="k" colspan="5">${esc(voceTesto('ivato','TOTALE'))}</td><td class="v" colspan="2">${fmtEur(T.totale)}</td></tr>
         ${conc?`<tr class="riepilogo v-sconto"><td class="k" colspan="5">${esc(etichettaSconto(conc))}</td><td class="v" colspan="2">${fmtEur(conc.sconto)}</td></tr>
         <tr class="finale v-concordato"><td class="k" colspan="5">${esc(voceTesto('concordato','PREZZO CONCORDATO'))}</td><td class="v" colspan="2">${fmtEur(conc.prezzo)}</td></tr>`:''}
-        ${accontiDelFoglio(t.id).map((x,i)=>`<tr class="acconto v-rata${i===0?' primo':''}">
+        ${accontiDaStampare(t.id).map((x,i)=>`<tr class="acconto v-rata${i===0?' primo':''}">
           <td class="k" colspan="4">${esc(x.nome)}</td>
           <td class="pc">${x.perc===''?'':percCorta(x.perc)+'%'}</td>
           <td class="v" colspan="2">${fmtEur(x.importo)}</td>
@@ -2766,7 +2790,7 @@ function foglioXlsx(tabId,primo){
   }
 
   // --- rate e acconti: importo = base × percentuale ---
-  const rate=accontiDelFoglio(t.id);
+  const rate=accontiDaStampare(t.id);
   if(rate.length){
     r++;
     for(const a of rate){
