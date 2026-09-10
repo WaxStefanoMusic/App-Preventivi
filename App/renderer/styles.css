@@ -594,6 +594,16 @@ button#btnAcconto{align-self:center}
   border:1px solid var(--border-strong);background:var(--surface-1);
   padding:2px 5px;border-radius:6px;
 }
+/* Le due righe del complessivo quando le sezioni hanno più rate: qui non si
+   scrive, si legge — il nome e la percentuale sono testo, non caselle. */
+.rt.acconto.riassunto .nome{
+  flex:1;min-width:0;padding:2px 0;font-size:var(--t-rata-k);font-weight:600;
+  letter-spacing:.02em;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.rt.acconto.riassunto .pc{
+  flex:0 0 auto;font-variant-numeric:tabular-nums;font-size:var(--t-rata-p);color:var(--ink-2);
+}
+
 .rt.acconto .v{
   flex:0 0 auto;min-width:96px;text-align:right;
   font-variant-numeric:tabular-nums;font-weight:640;font-size:var(--t-rata-v);

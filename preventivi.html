@@ -600,6 +600,16 @@ button#btnAcconto{align-self:center}
   border:1px solid var(--border-strong);background:var(--surface-1);
   padding:2px 5px;border-radius:6px;
 }
+/* Le due righe del complessivo quando le sezioni hanno più rate: qui non si
+   scrive, si legge — il nome e la percentuale sono testo, non caselle. */
+.rt.acconto.riassunto .nome{
+  flex:1;min-width:0;padding:2px 0;font-size:var(--t-rata-k);font-weight:600;
+  letter-spacing:.02em;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.rt.acconto.riassunto .pc{
+  flex:0 0 auto;font-variant-numeric:tabular-nums;font-size:var(--t-rata-p);color:var(--ink-2);
+}
+
 .rt.acconto .v{
   flex:0 0 auto;min-width:96px;text-align:right;
   font-variant-numeric:tabular-nums;font-weight:640;font-size:var(--t-rata-v);
@@ -1913,11 +1923,39 @@ function totaliHTML(T){
     <button id="btnAcconto" class="conc" title="Aggiungi una rata / acconto">＋ Aggiungi Rata/Acconto</button>`;
 }
 
+/* Le rate di un foglio. Nelle sezioni sono quelle che ci sono; nel complessivo
+   restano DUE anche quando le sezioni ne hanno di più — l'acconto e quello che
+   resta — perché lì il piano di pagamento si guarda da fuori: quanto si dà
+   adesso e quanto dopo. La prima riga è la somma dei primi acconti delle
+   sezioni, la seconda tutto il resto, così il conto torna sempre al totale.
+   Il nome della seconda è quello dell'ultima rata, che è la rata del saldo. */
+function accontiDelFoglio(tabId){
+  if(tabId===ID_TOT && S.acconti.length>2){
+    const base=baseAcconti(ID_TOT);
+    const primo=S.acconti[0], ultimo=S.acconti[S.acconti.length-1];
+    const uno=importoAcconto(primo,ID_TOT);
+    const resto=cent(base-uno);
+    const quota=i=>base?percPiena(i*100/base):'0';
+    return [{nome:primo.nome, perc:quota(uno), importo:uno},
+            {nome:ultimo.nome, perc:quota(resto), importo:resto}];
+  }
+  return S.acconti.map(a=>({nome:a.nome, perc:percMostrata(a,tabId), importo:importoAcconto(a,tabId)}));
+}
+
 /* Nel complessivo l'importo si legge e basta: lì è una somma, e per cambiarlo
    si va nella sezione che lo determina. Nelle sezioni invece si scrive, perché
    spesso l'accordo è «2.150 €» e non «il 43,72%». */
 function accontiHTML(){
   const inSezione = S.active!==ID_TOT;
+  /* Le due righe del complessivo sono conti, non campi: si cambiano nelle
+     sezioni, come tutto il resto di quel foglio. */
+  if(!inSezione && S.acconti.length>2)
+    return accontiDelFoglio(ID_TOT).map(x=>`
+    <div class="rt acconto riassunto" data-i="-1">
+      <span class="nome" title="${esc(x.nome)}">${esc(x.nome)}</span>
+      <span class="pc">${percCorta(x.perc)}%</span>
+      <span class="v" title="Nel complessivo è la somma delle sezioni">${fmtEur(x.importo)}</span>
+    </div>`).join('');
   return S.acconti.map((a,i)=>`
     <div class="rt acconto${accontoRitoccato(a,S.active)?' ritoccata':''}" data-i="${i}">
       <input class="nome" value="${esc(a.nome)}" placeholder="Descrizione della rata" title="${esc(a.nome)}">
@@ -2070,29 +2108,41 @@ function legaConcordato(){
   });
 }
 
-/* Le rate devono fare 100. Toccandone una, le altre si spostano da sé: la
-   parte che resta si divide fra loro in proporzione a quanto valevano, e
-   l'ultima assorbe il resto degli arrotondamenti — così la somma è esatta al
-   centesimo di punto. Se le altre erano tutte a zero si dividono la parte
-   rimasta in parti uguali: non c'è una proporzione da rispettare.
-   La riga su cui si sta scrivendo non si tocca mai. */
+/* Le rate devono fare 100. Toccandone una, a pareggiare il conto si muove UNA
+   SOLA delle altre: l'ultima, che è la rata del saldo — «il rimanente». Se è
+   proprio lei quella che si sta scrivendo, tocca alla penultima.
+
+   Prima la differenza si spalmava su tutte in proporzione, e con tre rate
+   succedeva questo: 4.000 sulla prima, 100 sulla seconda, e la terza — che
+   valeva zero e quindi non pesava — restava a zero mentre la prima schizzava a
+   7.900. Le cifre già decise a mano non si toccano: si muove il saldo, che è
+   lì per quello. Con due rate o con cento la regola non cambia. */
 function bilanciaAcconti(i,tabId){
+  if(S.acconti.length<2) return;                 // con una rata sola non c'è niente da bilanciare
+  pareggiaAcconti(tabId,i);
+}
+
+/* Rimette il conto a 100 partendo dal basso: la differenza la prende la rata
+   del saldo — l'ultima — e se lei non basta si risale a quella sopra, e così
+   via. La rata che si sta scrivendo non si tocca mai, e nessuna scende
+   sottozero.
+
+   Serve proprio questo: con tre rate, 4.000 sulla prima e 100 sulla seconda,
+   la terza deve trovarsi 3.900 da sé — non la prima a schizzare a 7.900. E con
+   otto rate, se quella in fondo è già a zero e non può assorbire, la
+   differenza la prende la prima che sopra di lei ha qualcosa da cedere. */
+function pareggiaAcconti(tabId,escluso){
   const n=S.acconti.length;
-  if(n<2 || i<0 || i>=n) return;                 // con una rata sola non c'è niente da bilanciare
-  const scritta=Math.max(0,Math.min(100,numIT(percAcconto(S.acconti[i],tabId))));
-  const resto=100-scritta;
-  const altri=S.acconti.map((_,k)=>k).filter(k=>k!==i);
-  const pesi=altri.map(k=>Math.max(0,numIT(percAcconto(S.acconti[k],tabId))));
-  const somma=pesi.reduce((a,b)=>a+b,0);
-  let dato=0;
-  altri.forEach((k,j)=>{
-    const ultimo = j===altri.length-1;
-    const quota = ultimo
-      ? resto-dato
-      : (somma>0 ? resto*pesi[j]/somma : resto/altri.length);
-    dato=dato+quota;
-    impostaPerc(S.acconti[k],tabId,percPiena(quota));
-  });
+  const val = k => Math.max(0,numIT(percAcconto(S.acconti[k],tabId)));
+  let differenza = 100 - S.acconti.reduce((somma,_,k)=>somma+val(k),0);
+  for(let k=n-1; k>=0 && Math.abs(differenza)>1e-9; k--){
+    if(k===escluso) continue;
+    const attuale=val(k);
+    const nuovo=Math.max(0,attuale+differenza);
+    if(nuovo===attuale) continue;                // già a zero e c'è da togliere: si sale
+    impostaPerc(S.acconti[k],tabId,percPiena(nuovo));
+    differenza-=(nuovo-attuale);
+  }
 }
 
 /* Tolta una rata, quelle rimaste tornano a fare 100 mantenendo le proporzioni
@@ -2102,19 +2152,13 @@ function normalizzaAcconti(){
   normalizzaIn(ID_TOT);                                   // le predefinite
   for(const t of tabVoci()) if(sezioneRitoccata(t.id)) normalizzaIn(t.id);
 }
+/* Tolta una rata, il conto lo pareggia il saldo, con la stessa regola: le
+   altre restano quelle che erano. Ridistribuendo in proporzione cambierebbero
+   tutte, e chi aveva scritto «4.000 alla conferma» se lo ritroverebbe diverso
+   per aver cancellato tutt'altra riga. */
 function normalizzaIn(tabId){
-  const n=S.acconti.length;
-  const pesi=S.acconti.map(a=>Math.max(0,numIT(percAcconto(a,tabId))));
-  const somma=pesi.reduce((a,b)=>a+b,0);
-  if(cent(somma)===100) return;
-  let dato=0;
-  S.acconti.forEach((a,k)=>{
-    const quota = k===n-1
-      ? 100-dato
-      : (somma>0 ? 100*pesi[k]/somma : 100/n);
-    dato=dato+quota;
-    impostaPerc(a,tabId,percPiena(quota));
-  });
+  if(!S.acconti.length) return;
+  pareggiaAcconti(tabId,-1);
 }
 
 /* Riporta nei campi le percentuali ricalcolate, tranne quello in cui si sta
@@ -3107,10 +3151,10 @@ function foglioStampaHTML(tabId){
         <tr class="v-ivato${conc?'':' finale'}"><td class="k" colspan="5">${esc(voceTesto('ivato','TOTALE'))}</td><td class="v" colspan="2">${fmtEur(T.totale)}</td></tr>
         ${conc?`<tr class="riepilogo v-sconto"><td class="k" colspan="5">${esc(etichettaSconto(conc))}</td><td class="v" colspan="2">${fmtEur(conc.sconto)}</td></tr>
         <tr class="finale v-concordato"><td class="k" colspan="5">${esc(voceTesto('concordato','PREZZO CONCORDATO'))}</td><td class="v" colspan="2">${fmtEur(conc.prezzo)}</td></tr>`:''}
-        ${S.acconti.map((a,i)=>`<tr class="acconto v-rata${i===0?' primo':''}">
-          <td class="k" colspan="4">${esc(a.nome)}</td>
-          <td class="pc">${percMostrata(a,t.id)===''?'':percCorta(percMostrata(a,t.id))+'%'}</td>
-          <td class="v" colspan="2">${fmtEur(importoAcconto(a,t.id))}</td>
+        ${accontiDelFoglio(t.id).map((x,i)=>`<tr class="acconto v-rata${i===0?' primo':''}">
+          <td class="k" colspan="4">${esc(x.nome)}</td>
+          <td class="pc">${x.perc===''?'':percCorta(x.perc)+'%'}</td>
+          <td class="v" colspan="2">${fmtEur(x.importo)}</td>
         </tr>`).join('')}
       </tbody>
       <!-- La nota chiude il foglio, sotto le rate: è l'ultima cosa che si
@@ -3668,13 +3712,14 @@ function foglioXlsx(tabId,primo){
   }
 
   // --- rate e acconti: importo = base × percentuale ---
-  if(S.acconti.length){
+  const rate=accontiDelFoglio(t.id);
+  if(rate.length){
     r++;
-    for(const a of S.acconti){
+    for(const a of rate){
       const rp=r;
       add(cellaTesto(1,r,a.nome,23),
-          cellaNum(5,r,numIT(percMostrata(a,t.id)),24),
-          cellaForm(6,r,`${RIF(6,rBase)}*${RIF(5,rp)}/100`,importoAcconto(a,t.id),29));
+          cellaNum(5,r,numIT(a.perc),24),
+          cellaForm(6,r,`${RIF(6,rBase)}*${RIF(5,rp)}/100`,a.importo,29));
       merge.push(`<mergeCell ref="${RIF(1,r)}:${RIF(4,r)}"/>`);
       r++;
     }

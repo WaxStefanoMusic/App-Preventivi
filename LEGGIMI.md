@@ -95,8 +95,20 @@ riquadro aggiunge un'altra rata, la `×` ne toglie una. Se le percentuali non
 fanno 100 l'app te lo dice ma non ti ferma. Anche le rate finiscono in stampa,
 nel PDF e nell'Excel.
 
-Nelle sezioni ogni rata mostra la propria quota, spartita come il prezzo
-concordato: le quote delle sezioni sommano al centesimo la rata del complessivo.
+Nelle sezioni si può scrivere **anche l'importo** al posto della percentuale:
+digitando `2.181,50` la percentuale si ricava da lì, esatta al centesimo. Quello
+che si scrive resta dov'è: a pareggiare il conto a 100 si muove una sola delle
+altre rate, quella del saldo in fondo — e se lei non basta, si risale a quella
+sopra. Con tre rate su 8.000 €, scrivendo 4.000 sulla prima e 100 sulla seconda,
+la terza si trova da sé i suoi 3.900.
+
+Le rate di una sezione valgono solo per lei: le altre continuano a seguire la
+percentuale predefinita finché non le si tocca.
+
+Nel **preventivo complessivo** le rate restano **due** anche quando le sezioni ne
+hanno di più: l'acconto — la somma dei primi acconti delle sezioni — e il
+rimanente, cioè tutto il resto. Sono conti, non caselle: si cambiano nelle
+sezioni, e la loro somma è sempre il totale.
 
 **Stampa ed esportazione.** `▯ Verticale` / `▭ Orizzontale` sceglie il formato A4;
 il foglio a schermo è già largo quanto quello che uscirà. Quando le voci non
