@@ -378,7 +378,7 @@ const percEsatta = p => String(numIT(p)).replace('.',',');
    ------------------------------------------------------------------ */
 const RATE_INIZIALI = () => ([
   {id:uid(), nome:"ACCONTO ALLA CONFERMA D'ORDINE", perc:'50'},
-  {id:uid(), nome:'RIMANENTE A LAVORI CONCLUSI',    perc:'50'},
+  {id:uid(), nome:'RIMANENZA A LAVORI CONCLUSI',    perc:'50'},
 ]);
 
 /** le rate di una sezione: se non le ha ancora, nascono le due di sempre */
@@ -522,7 +522,18 @@ function migraRate(doc){
           perc:(a.sez && a.sez[t.id]!=null) ? a.sez[t.id] : a.perc}))
       : RATE_INIZIALI();
   }
+  rinominaSaldo(rate);
   return rate;
+}
+
+/* Il saldo si chiamava «RIMANENTE A LAVORI CONCLUSI». Nei preventivi già
+   salvati quel nome è un dato, e un dato non si riscrive a cuor leggero: si
+   cambia solo dove era rimasto quello di partenza. Chi l'aveva rinominata a
+   modo suo se la ritrova com'era. */
+function rinominaSaldo(rate){
+  for(const elenco of Object.values(rate||{}))
+    for(const x of (elenco||[]))
+      if(x && x.nome==='RIMANENTE A LAVORI CONCLUSI') x.nome='RIMANENZA A LAVORI CONCLUSI';
 }
 
 /** ritoccando una sezione, il complessivo torna a essere la somma delle sezioni */
