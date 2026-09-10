@@ -1154,8 +1154,12 @@ function accontiHTML(){
   const tasto=`<button id="btnAcconto" class="conc piuRata" title="${inSezione
     ? 'Aggiunge una rata a questa sezione'
     : 'Aggiunge una rata a tutte le sezioni'}">＋ Aggiungi Rata/Acconto</button>`;
+  /* Il tasto sta sotto all'ultima rata aggiunta, cioè appena sopra il
+     rimanente: è il punto in cui comparirà la prossima, e leggendo dall'alto
+     si capisce da sé. */
   if(!rate.length) return tasto;
-  return riga(rate[0],0) + tasto + rate.slice(1).map((x,i)=>riga(x,i+1)).join('');
+  if(rate.length===1) return riga(rate[0],0) + tasto;
+  return rate.slice(0,-1).map(riga).join('') + tasto + riga(rate[rate.length-1],rate.length-1);
 }
 
 /* Le percentuali le decide l'utente e possono anche non fare 100: si segnala
