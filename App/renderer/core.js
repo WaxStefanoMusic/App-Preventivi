@@ -985,22 +985,16 @@ function totaliHTML(T){
     <button id="btnAcconto" class="conc" title="Aggiungi una rata / acconto">＋ Aggiungi Rata/Acconto</button>`;
 }
 
-/* Le rate di un foglio. Nelle sezioni sono quelle che ci sono; nel complessivo
-   restano DUE anche quando le sezioni ne hanno di più — l'acconto e quello che
-   resta — perché lì il piano di pagamento si guarda da fuori: quanto si dà
-   adesso e quanto dopo. La prima riga è la somma dei primi acconti delle
-   sezioni, la seconda tutto il resto, così il conto torna sempre al totale.
-   Il nome della seconda è quello dell'ultima rata, che è la rata del saldo. */
+/* Le rate di un foglio. Nel complessivo ogni rata è la somma delle rate di
+   pari numero delle sezioni — le prime con le prime, le seconde con le seconde
+   — e questo è già quello che «importoAcconto» calcola per il complessivo.
+   Una sezione con due sole rate ha la terza a zero e semplicemente non le
+   aggiunge niente:
+
+     Sezione 1: 300 + 300
+     Sezione 2: 400 + 200 + 300
+     Complessivo: 700 + 500 + 300  */
 function accontiDelFoglio(tabId){
-  if(tabId===ID_TOT && S.acconti.length>2){
-    const base=baseAcconti(ID_TOT);
-    const primo=S.acconti[0], ultimo=S.acconti[S.acconti.length-1];
-    const uno=importoAcconto(primo,ID_TOT);
-    const resto=cent(base-uno);
-    const quota=i=>base?percPiena(i*100/base):'0';
-    return [{nome:primo.nome, perc:quota(uno), importo:uno},
-            {nome:ultimo.nome, perc:quota(resto), importo:resto}];
-  }
   return S.acconti.map(a=>({nome:a.nome, perc:percMostrata(a,tabId), importo:importoAcconto(a,tabId)}));
 }
 
@@ -1015,15 +1009,6 @@ const accontiDaStampare = tabId => accontiDelFoglio(tabId).filter(x=>cent(x.impo
    spesso l'accordo è «2.150 €» e non «il 43,72%». */
 function accontiHTML(){
   const inSezione = S.active!==ID_TOT;
-  /* Le due righe del complessivo sono conti, non campi: si cambiano nelle
-     sezioni, come tutto il resto di quel foglio. */
-  if(!inSezione && S.acconti.length>2)
-    return accontiDelFoglio(ID_TOT).map(x=>`
-    <div class="rt acconto riassunto" data-i="-1">
-      <span class="nome" title="${esc(x.nome)}">${esc(x.nome)}</span>
-      <span class="pc">${percCorta(x.perc)}%</span>
-      <span class="v" title="Nel complessivo è la somma delle sezioni">${fmtEur(x.importo)}</span>
-    </div>`).join('');
   return S.acconti.map((a,i)=>`
     <div class="rt acconto${accontoRitoccato(a,S.active)?' ritoccata':''}" data-i="${i}">
       <input class="nome" value="${esc(a.nome)}" placeholder="Descrizione della rata" title="${esc(a.nome)}">

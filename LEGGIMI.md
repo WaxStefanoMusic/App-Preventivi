@@ -105,10 +105,16 @@ la terza si trova da sé i suoi 3.900.
 Le rate di una sezione valgono solo per lei: le altre continuano a seguire la
 percentuale predefinita finché non le si tocca.
 
-Nel **preventivo complessivo** le rate restano **due** anche quando le sezioni ne
-hanno di più: l'acconto — la somma dei primi acconti delle sezioni — e il
-rimanente, cioè tutto il resto. Sono conti, non caselle: si cambiano nelle
-sezioni, e la loro somma è sempre il totale.
+Nel **preventivo complessivo** ogni rata è la **somma delle rate di pari numero**
+delle sezioni: le prime con le prime, le seconde con le seconde. Una sezione che
+di rate ne usa due semplicemente non aggiunge niente alla terza.
+
+    Sezione 1:   300 + 300
+    Sezione 2:   400 + 200 + 300
+    Complessivo: 700 + 500 + 300
+
+Le rate senza importo non finiscono in stampa: la sezione qui sopra che usa due
+rate ne stampa due, non tre con una da zero euro.
 
 **Stampa ed esportazione.** `▯ Verticale` / `▭ Orizzontale` sceglie il formato A4;
 il foglio a schermo è già largo quanto quello che uscirà. Quando le voci non
