@@ -88,9 +88,9 @@ in stampa, nel PDF e nell'Excel, e lì la cifra che chiude il conto diventa il
 prezzo concordato. Il `×` accanto al prezzo lo toglie e tutto torna com'era.
 
 **Acconti.** Ogni sezione ha le **sue** rate: sotto ai totali ci sono già le due
-scadenze che si usano quasi sempre —  al 50% e
- al 50%. Aggiungerne una in una sezione **non** la
-aggiunge alle altre. Il tasto  sta sotto alla prima:
+scadenze che si usano quasi sempre — `ACCONTO ALLA CONFERMA D'ORDINE` al 50% e
+`RIMANENTE A LAVORI CONCLUSI` al 50%. Aggiungerne una in una sezione **non** la
+aggiunge alle altre. Il tasto `＋ Aggiungi Rata/Acconto` sta sotto alla prima:
 le rate nuove nascono lì, in mezzo, e il rimanente resta in fondo.
 
 Nome e percentuale si scrivono a mano; nelle sezioni si può scrivere **anche
