@@ -568,6 +568,14 @@ button.piu{
 .totali .rt.azioneconc{justify-content:center;padding:7px 10px}
 button.conc{justify-content:center;font-size:12.5px;padding:5px 12px}
 button#btnAcconto{align-self:center}
+/* Il tasto per aggiungere una rata sta DENTRO l'elenco, subito sotto la prima:
+   le rate nuove nascono lì, in mezzo, e il rimanente resta in fondo. Rientrato
+   e leggero, per non sembrare una rata anche lui. */
+.acconti button.piuRata{
+  display:flex;margin:2px 0 4px 12px;font-size:11.5px;padding:3px 9px;
+  color:var(--ink-2);border-color:var(--border);
+}
+.acconti button.piuRata:hover{color:var(--accent);border-color:var(--accent)}
 .notaconc{font-size:11px;color:var(--ink-3);text-align:right;line-height:1.4;margin-top:-2px}
 .notaconc.avviso{color:#8a5c00}
 :root[data-theme="dark"] .notaconc.avviso{color:var(--warning)}

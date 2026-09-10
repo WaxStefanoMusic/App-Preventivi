@@ -574,6 +574,14 @@ button.piu{
 .totali .rt.azioneconc{justify-content:center;padding:7px 10px}
 button.conc{justify-content:center;font-size:12.5px;padding:5px 12px}
 button#btnAcconto{align-self:center}
+/* Il tasto per aggiungere una rata sta DENTRO l'elenco, subito sotto la prima:
+   le rate nuove nascono lì, in mezzo, e il rimanente resta in fondo. Rientrato
+   e leggero, per non sembrare una rata anche lui. */
+.acconti button.piuRata{
+  display:flex;margin:2px 0 4px 12px;font-size:11.5px;padding:3px 9px;
+  color:var(--ink-2);border-color:var(--border);
+}
+.acconti button.piuRata:hover{color:var(--accent);border-color:var(--accent)}
 .notaconc{font-size:11px;color:var(--ink-3);text-align:right;line-height:1.4;margin-top:-2px}
 .notaconc.avviso{color:#8a5c00}
 :root[data-theme="dark"] .notaconc.avviso{color:var(--warning)}
@@ -1019,12 +1027,10 @@ const NUOVO = () => ({
      voce per ogni TAB — il complessivo e ogni sezione — perché il prezzo
      pattuito sul totale va ripartito fra le sezioni. */
   concordati:null,
-  /* Acconti: le due scadenze di pagamento che si usano quasi sempre. La
-     percentuale è quella che comanda, l'importo si ricava da lì. */
-  acconti:[
-    {id:uid(), nome:"ACCONTO ALLA CONFERMA D'ORDINE", perc:'50'},
-    {id:uid(), nome:'RIMANENTE A LAVORI CONCLUSI',    perc:'50'},
-  ],
+/* Le rate di ogni sezione, una lista per ognuna: «rate[idSezione]». Nascono
+     al bisogno con le due scadenze di sempre (vedi «rateSezione»), e il
+     preventivo complessivo non ne ha di proprie — le somma dalle sezioni. */
+  rate:{},
   /* Complessivo semplificato: al posto di tutte le voci, una riga per
      sezione. È una scelta di QUESTO preventivo, quindi va nel file. */
   semplificato:false,
@@ -1288,15 +1294,6 @@ function baseAcconti(tabId){
   return totali(righeDi(tabId)).totale;
 }
 
-/* La percentuale di una rata, sezione per sezione.
-   Quella scritta in «perc» vale per tutte: è il 50/50 di partenza. Toccando la
-   rata DENTRO una sezione — la percentuale, oppure direttamente l'importo —
-   quella sezione si stacca e tiene la sua, annotata in «sez»; le altre
-   continuano a seguire la predefinita, senza accorgersi di niente. */
-function percAcconto(a,tabId){
-  if(tabId && tabId!==ID_TOT && a.sez && a.sez[tabId]!=null) return a.sez[tabId];
-  return a.perc;
-}
 /* Le percentuali si tengono PER INTERO, non arrotondate al centesimo di punto.
    Scrivendo 2.181,50 in una sezione da 5.137,20 la percentuale è 42,464463…%:
    arrotondata a 42,46 tornerebbe indietro come 2.181,26 €, e la cifra pattuita
@@ -1306,50 +1303,171 @@ const percPiena = n => String(Math.round((+n||0)*1e8)/1e8).replace('.',',');
 const percCorta = p => fmtQty(cent(numIT(p)));
 const percEsatta = p => String(numIT(p)).replace('.',',');
 
-const accontoRitoccato = (a,tabId) => !!(a && a.sez && tabId && a.sez[tabId]!=null);
+/* ------------------------------------------------------------------
+   Le rate: una lista per OGNI sezione.
 
-/* Una rata «fissata» è una rata su cui l'utente ha scritto: la sua cifra è una
-   decisione, non un calcolo, e il pareggio non deve spostarla. Scrivendo 4.000
-   sulla prima e 100 sulla seconda, quei due numeri restano lì: a trovarsi il
-   suo importo è la terza, che nessuno ha ancora toccato. */
-const rataFissata = (a,tabId) => !!(a && a.fissa && a.fissa[tabId]);
-function fissaRata(a,tabId){ (a.fissa || (a.fissa={}))[tabId]=true; }
-function liberaRate(tabId){ for(const a of S.acconti) if(a.fissa) delete a.fissa[tabId]; }
-/** true se in questa sezione almeno una rata è stata decisa a mano */
-const sezioneRitoccata = tabId => tabId!==ID_TOT && S.acconti.some(a=>accontoRitoccato(a,tabId));
-/* Nel complessivo la domanda diventa un'altra: c'è QUALCHE sezione decisa a
-   mano? Se sì, la percentuale che si vede qui è ricavata dagli importi, e può
-   non essere quella appena scritta: senza dirlo sembrerebbe un capriccio. */
-const conSezioniAMano = () => tabNelTotale().some(t=>sezioneRitoccata(t.id));
-const rateAMano = tabId => tabId===ID_TOT ? conSezioniAMano() : sezioneRitoccata(tabId);
+   Aggiungerne una in «Cucina» non la fa comparire in «Posa»: sono preventivi
+   diversi, con scadenze diverse. Il preventivo complessivo non ha rate sue —
+   le ricava dalle sezioni, e proprio per questo i suoi conti sono sempre la
+   somma di quello che si incassa davvero.
 
-/** scrive la percentuale dove va: nella sezione, o nella predefinita se si è nel complessivo */
-function impostaPerc(a,tabId,valore){
-  if(tabId===ID_TOT){ a.perc=valore; return; }
-  (a.sez || (a.sez={}))[tabId]=valore;
+   L'ordine dice il ruolo: la PRIMA è l'acconto, l'ULTIMA è il rimanente. Le
+   rate aggiunte si infilano in mezzo, e nel complessivo si sommano per
+   posizione: le prime con le prime, le ultime con le ultime, le altre a
+   scendere dall'alto.
+
+       Sezione 1:   acconto 300              rimanente 300
+       Sezione 2:   acconto 400   rata 200   rimanente 300
+       Complessivo:         700         200            600
+   ------------------------------------------------------------------ */
+const RATE_INIZIALI = () => ([
+  {id:uid(), nome:"ACCONTO ALLA CONFERMA D'ORDINE", perc:'50'},
+  {id:uid(), nome:'RIMANENTE A LAVORI CONCLUSI',    perc:'50'},
+]);
+
+/** le rate di una sezione: se non le ha ancora, nascono le due di sempre */
+function rateSezione(tabId){
+  if(!S.rate || typeof S.rate!=='object' || Array.isArray(S.rate)) S.rate={};
+  if(!Array.isArray(S.rate[tabId])) S.rate[tabId]=RATE_INIZIALI();
+  return S.rate[tabId];
 }
 
-/* L'importo di una rata. In una sezione è la sua percentuale sul suo totale.
-   Nel complessivo NON è una percentuale sua: è la somma di quello che si
-   incassa nelle sezioni. Se in «Complementi» il primo acconto è stato fissato
-   a 2.150 €, il complessivo deve dire 2.150 € più le quote delle altre, non il
-   50% di tutto: è quella la cifra che il cliente paga. */
-function importoAcconto(a,tabId){
-  if(tabId!==ID_TOT) return cent(baseAcconti(tabId)*numIT(percAcconto(a,tabId))/100);
+/* In quale riga del complessivo finisce la rata «j» di una sezione che ne ha
+   «quante», quando il complessivo di righe ne ha «righe». La prima resta la
+   prima, l'ultima resta l'ultima — il rimanente è il rimanente — e quelle in
+   mezzo si allineano dall'alto. */
+function rigaNelTotale(j,quante,righe){
+  if(quante<=1) return 0;
+  if(j===quante-1) return righe-1;
+  return Math.min(j,righe-2);
+}
+/* e la strada all'indietro: quale rata di una sezione corrisponde alla riga
+   «k» del complessivo. Torna -1 se quella sezione quella riga non ce l'ha. */
+function rataDallaRiga(k,quante,righe){
+  if(quante<=0) return -1;
+  if(quante<=1) return k===0?0:-1;
+  if(k===righe-1) return quante-1;
+  return k<quante-1 ? k : -1;
+}
+
+/** le righe del complessivo: nome, percentuale e importo, ricavati dalle sezioni */
+function rateComplessivo(){
   const sezioni=tabNelTotale();
-  if(!sezioni.length) return cent(baseAcconti(ID_TOT)*numIT(a.perc)/100);
-  return sezioni.reduce((tot,t)=>cent(tot+importoAcconto(a,t.id)),0);
+  const righe=sezioni.reduce((m,t)=>Math.max(m,rateSezione(t.id).length),0);
+  if(!righe) return [];
+  const importi=new Array(righe).fill(0), nomi=new Array(righe).fill('');
+  for(const t of sezioni){
+    const rate=rateSezione(t.id), base=baseAcconti(t.id);
+    rate.forEach((x,j)=>{
+      const k=rigaNelTotale(j,rate.length,righe);
+      importi[k]=cent(importi[k]+cent(base*numIT(x.perc)/100));
+      if(!nomi[k]) nomi[k]=x.nome;
+    });
+  }
+  const base=baseAcconti(ID_TOT);
+  return importi.map((imp,k)=>({
+    id:'tot'+k, nome:nomi[k]||('RATA '+(k+1)),
+    perc: base?percPiena(imp*100/base):'0', importo:imp, fissa:false,
+  }));
 }
 
-/** la percentuale che il complessivo mostra: ricavata all'indietro dagli importi veri */
-function percComplessivo(a){
-  if(!tabNelTotale().some(t=>accontoRitoccato(a,t.id))) return a.perc;   // nessuno ha toccato niente
-  const base=baseAcconti(ID_TOT);
-  if(!base) return a.perc;
-  return percPiena(importoAcconto(a,ID_TOT)*100/base);
+/** le rate di un foglio, con l'importo già fatto */
+function accontiDelFoglio(tabId){
+  if(tabId===ID_TOT) return rateComplessivo();
+  const base=baseAcconti(tabId);
+  return rateSezione(tabId).map(x=>({
+    id:x.id, nome:x.nome, perc:x.perc, fissa:!!x.fissa,
+    importo:cent(base*numIT(x.perc)/100),
+  }));
 }
-/** quella da far vedere nel riquadro della sezione aperta */
-const percMostrata = (a,tabId) => tabId===ID_TOT ? percComplessivo(a) : percAcconto(a,tabId);
+
+/* Quelle che finiscono sul foglio: le rate da zero euro no. Una sezione che non
+   usa la terza rata si ritroverebbe stampata una riga «ACCONTO — 0,00 €», che
+   al cliente non dice niente e sembra un errore. A schermo restano tutte,
+   perché è lì che si scrivono. */
+const accontiDaStampare = tabId => accontiDelFoglio(tabId).filter(x=>cent(x.importo)!==0);
+
+/* ---- le operazioni su una sezione ---- */
+
+/* Una rata nuova si infila PRIMA dell'ultima: l'ultima è il rimanente, e il
+   rimanente sta in fondo. Nasce a zero, e il conto continua a fare 100 finché
+   non le si dà un valore. */
+function aggiungiRataIn(tabId){
+  const rate=rateSezione(tabId);
+  const dove=Math.max(1,rate.length-1);
+  rate.splice(dove,0,{id:uid(), nome:'ACCONTO', perc:''});
+  return dove;
+}
+function togliRataIn(tabId,id){
+  const rate=rateSezione(tabId);
+  const i=rate.findIndex(x=>x.id===id);
+  if(i<0) return false;
+  rate.splice(i,1);
+  pareggiaRate(tabId,-1);
+  return true;
+}
+/* «comando» distingue chi ha scritto. In una sezione comanda l'utente su quella
+   rata, e le rate che aveva già deciso a mano restano dove sono. Dal
+   complessivo invece si detta una regola per tutti — «il primo acconto è il
+   40%» — e allora le sezioni si rifanno i conti per intero: una sezione che
+   restasse indietro darebbe un totale che non torna. */
+function scriviPercIn(tabId,i,valore,comando){
+  const rate=rateSezione(tabId);
+  if(!rate[i]) return;
+  rate[i].perc=valore;
+  rate[i].fissa=true;                 // scritta a mano: il pareggio non la sposta
+  pareggiaRate(tabId,i,comando);
+}
+
+/* ---- e quelle date dal complessivo, che valgono per tutte le sezioni ---- */
+
+/* Dal complessivo si comanda su tutte le sezioni che ci stanno dentro: quello
+   che si scrive lì è la somma di tutte, e tutte devono seguirlo. Le sezioni
+   tenute fuori dal complessivo non si toccano: sono fuori anche da questo. */
+function perOgniSezione(fn){ for(const t of tabNelTotale()) fn(t.id); }
+
+function aggiungiRataOvunque(){ perOgniSezione(id=>aggiungiRataIn(id)); }
+
+function scriviPercDalTotale(k,valore){
+  const righe=rateComplessivo().length;
+  perOgniSezione(id=>{
+    const rate=rateSezione(id);
+    const j=rataDallaRiga(k,rate.length,righe);
+    if(j>=0) scriviPercIn(id,j,valore,true);   // detta dal complessivo: vale per tutti
+  });
+}
+function rinominaDalTotale(k,nome){
+  const righe=rateComplessivo().length;
+  perOgniSezione(id=>{
+    const rate=rateSezione(id);
+    const j=rataDallaRiga(k,rate.length,righe);
+    if(j>=0) rate[j].nome=nome;
+  });
+}
+function togliRataDalTotale(k){
+  const righe=rateComplessivo().length;
+  perOgniSezione(id=>{
+    const rate=rateSezione(id);
+    const j=rataDallaRiga(k,rate.length,righe);
+    if(j>=0){ rate.splice(j,1); pareggiaRate(id,-1); }
+  });
+}
+
+/* I preventivi salvati prima avevano UN elenco di rate solo, uguale per tutte
+   le sezioni, con le percentuali della singola sezione annotate a parte. Qui
+   diventano le rate di ognuna: gli stessi numeri, sistemati dove vivono ora. */
+function migraRate(doc){
+  if(doc.rate && typeof doc.rate==='object' && !Array.isArray(doc.rate)) return doc.rate;
+  const vecchie = Array.isArray(doc.acconti) ? doc.acconti : null;
+  const rate={};
+  for(const t of (doc.tabs||[]).filter(t=>t.type==='voci')){
+    rate[t.id] = vecchie
+      ? vecchie.map(a=>({id:uid(), nome:a.nome,
+          perc:(a.sez && a.sez[t.id]!=null) ? a.sez[t.id] : a.perc}))
+      : RATE_INIZIALI();
+  }
+  return rate;
+}
 
 /** ritoccando una sezione, il complessivo torna a essere la somma delle sezioni */
 function sommaConcordati(){
@@ -1604,6 +1722,7 @@ function eliminaTab(id){
   const fai=()=>{
     S.righe=S.righe.filter(r=>r.tabId!==id);
     S.tabs=S.tabs.filter(x=>x.id!==id);
+    if(S.rate) delete S.rate[id];              // le rate della sezione se ne vanno con lei
     // sparita la sezione, sparisce anche la sua quota: il complessivo si rifà
     if(concordatoAttivo()){ delete S.concordati[id]; sommaConcordati(); }
     if(S.active===id) S.active=(tabVoci()[0]||S.tabs[0]).id;
@@ -1718,6 +1837,8 @@ function duplicaTab(id){
   S.tabs.splice(S.tabs.indexOf(t)+1,0,copia);
   for(const r of S.righe.filter(x=>x.tabId===id).slice())
     S.righe.push(Object.assign({},r,{id:uid(),tabId:copia.id}));
+  /* anche le rate: sono sue, e una copia deve nascere identica all'originale */
+  S.rate[copia.id]=rateSezione(id).map(x=>Object.assign({},x,{id:uid()}));
   if(concordatoAttivo()){ S.concordati[copia.id]=''; sommaConcordati(); }
   S.active=copia.id; tocca(); render();
   toast('Sezione duplicata','ok');
@@ -1945,48 +2066,40 @@ function totaliHTML(T){
           <button id="btnToglieConcordato" class="x" title="Togli il prezzo concordato">×</button>
         </span>
       </div>`:''}
-      ${S.acconti.length?`<div class="acconti">${accontiHTML()}</div>`:''}
+      <div class="acconti">${accontiHTML()}</div>
     </div>
     ${nota?`<div class="notaconc">${esc(nota)}</div>`:''}
-    ${notaPercentuali()}
-    <button id="btnAcconto" class="conc" title="Aggiungi una rata / acconto">＋ Aggiungi Rata/Acconto</button>`;
+    ${notaPercentuali()}`;
 }
 
-/* Le rate di un foglio. Nel complessivo ogni rata è la somma delle rate di
-   pari numero delle sezioni — le prime con le prime, le seconde con le seconde
-   — e questo è già quello che «importoAcconto» calcola per il complessivo.
-   Una sezione con due sole rate ha la terza a zero e semplicemente non le
-   aggiunge niente:
-
-     Sezione 1: 300 + 300
-     Sezione 2: 400 + 200 + 300
-     Complessivo: 700 + 500 + 300  */
-function accontiDelFoglio(tabId){
-  return S.acconti.map(a=>({nome:a.nome, perc:percMostrata(a,tabId), importo:importoAcconto(a,tabId)}));
-}
-
-/* Quelle che finiscono sul foglio: le rate da zero euro no. Una sezione che non
-   usa la terza rata si ritroverebbe stampata una riga «ACCONTO — 0,00 €», che
-   al cliente non dice niente e sembra un errore. A schermo restano tutte,
-   perché è lì che si scrivono. */
-const accontiDaStampare = tabId => accontiDelFoglio(tabId).filter(x=>cent(x.importo)!==0);
-
-/* Nel complessivo l'importo si legge e basta: lì è una somma, e per cambiarlo
-   si va nella sezione che lo determina. Nelle sezioni invece si scrive, perché
-   spesso l'accordo è «2.150 €» e non «il 43,72%». */
+/* Il riquadro delle rate. Il tasto per aggiungerne una sta subito sotto alla
+   prima: le rate nuove nascono lì, in mezzo, e il rimanente resta in fondo dove
+   deve stare.
+   Nel complessivo si scrive lo stesso — nome e percentuale — ma quello che si
+   scrive vale per tutte le sezioni: è la somma di tutte. L'importo no: quello
+   è un conto, e si cambia nella sezione che lo determina. */
 function accontiHTML(){
   const inSezione = S.active!==ID_TOT;
-  return S.acconti.map((a,i)=>`
-    <div class="rt acconto${accontoRitoccato(a,S.active)?' ritoccata':''}" data-i="${i}">
-      <input class="nome" value="${esc(a.nome)}" placeholder="Descrizione della rata" title="${esc(a.nome)}">
-      <span class="pc"><input class="perc" value="${esc(percCorta(percMostrata(a,S.active)))}" inputmode="decimal" placeholder="0"
-        title="${esc((inSezione?'Percentuale di questa rata in questa sezione':'Percentuale predefinita: la seguono le sezioni non impostate a mano')+' — esatta: '+percEsatta(percMostrata(a,S.active))+'%')}">%</span>
+  const rate=accontiDelFoglio(S.active);
+  const titoloPerc = inSezione
+    ? 'Percentuale di questa rata in questa sezione'
+    : 'Percentuale sul totale: scrivendola qui la seguono tutte le sezioni';
+  const riga=(x,i)=>`
+    <div class="rt acconto${x.fissa?' ritoccata':''}" data-i="${i}">
+      <input class="nome" value="${esc(x.nome)}" placeholder="Descrizione della rata" title="${esc(x.nome)}">
+      <span class="pc"><input class="perc" value="${esc(percCorta(x.perc))}" inputmode="decimal" placeholder="0"
+        title="${esc(titoloPerc+' — esatta: '+percEsatta(x.perc)+'%')}">%</span>
       ${inSezione
-        ? `<span class="v scrivi"><input class="imp" value="${esc(fmtNum(importoAcconto(a,S.active)))}" inputmode="decimal"
+        ? `<span class="v scrivi"><input class="imp" value="${esc(fmtNum(x.importo))}" inputmode="decimal"
              title="L'importo di questa rata in questa sezione: scrivendolo, la percentuale si ricava da qui"><span class="eu">€</span></span>`
-        : `<span class="v" title="Nel complessivo è la somma delle sezioni">${fmtEur(importoAcconto(a,ID_TOT))}</span>`}
+        : `<span class="v" title="Nel complessivo è la somma delle sezioni">${fmtEur(x.importo)}</span>`}
       <button class="x" data-act="delacc" title="Togli questa rata">×</button>
-    </div>`).join('');
+    </div>`;
+  const tasto=`<button id="btnAcconto" class="conc piuRata" title="${inSezione
+    ? 'Aggiunge una rata a questa sezione'
+    : 'Aggiunge una rata a tutte le sezioni'}">＋ Aggiungi Rata/Acconto</button>`;
+  if(!rate.length) return tasto;
+  return riga(rate[0],0) + tasto + rate.slice(1).map((x,i)=>riga(x,i+1)).join('');
 }
 
 /* Le percentuali le decide l'utente e possono anche non fare 100: si segnala
@@ -1995,16 +2108,10 @@ function accontiHTML(){
    sparire per davvero significherebbe rifare il riquadro mentre si scrive la
    percentuale, e il campo perderebbe il fuoco a metà cifra. */
 function notaPercentuali(){
-  if(!S.acconti.length) return '';
-  const somma=cent(S.acconti.reduce((s,a)=>s+numIT(percMostrata(a,S.active)),0));
-  const tot=S.active===ID_TOT;
-  const testo = tot
-    ? 'Una sezione ha le rate decise a mano: qui vedi la percentuale che ne risulta.'
-    : 'Rate decise a mano in questa sezione.';
-  const etichetta = tot ? 'Riporta tutte al predefinito' : 'Riporta al predefinito';
-  return `<div class="notaconc avviso"${somma===100?' hidden':''}>Le rate sommano al ${fmtQty(somma)}%.</div>`
-       + `<div class="notaconc mano" id="notaMano"${rateAMano(S.active)?'':' hidden'}>${testo}
-           <button class="rimetti" id="btnRimettiAcconti" title="Le sezioni tornano a seguire la percentuale predefinita">${etichetta}</button></div>`;
+  const rate=accontiDelFoglio(S.active);
+  if(!rate.length) return '';
+  const somma=cent(rate.reduce((s,x)=>s+numIT(x.perc),0));
+  return `<div class="notaconc avviso"${somma===100?' hidden':''}>Le rate sommano al ${fmtQty(somma)}%.</div>`;
 }
 
 /** ridisegna il riquadro dei totali senza far perdere il segno a chi sta scrivendo */
@@ -2052,57 +2159,49 @@ function legaConcordato(){
     };
   }
 
-  /* Rate e acconti: nome e percentuale si scrivono a mano, l'importo lo calcola
-     l'app. Come per il prezzo concordato, scrivendo non si ridisegna il
+  /* Rate e acconti. In una sezione si scrive sulle sue rate; nel complessivo
+     quello che si scrive vale per tutte le sezioni, perché lì i numeri sono la
+     loro somma. Come per il prezzo concordato, scrivendo non si ridisegna il
      riquadro: si riscrivono solo gli importi. */
+  const inSezione = S.active!==ID_TOT;
+
   $('#btnAcconto')?.addEventListener('click',()=>{
-    S.acconti.push({id:uid(), nome:'ACCONTO', perc:''});
+    /* Dal complessivo la rata si aggiunge a TUTTE le sezioni: è l'unico modo
+       perché quella riga in più abbia un senso, visto che il complessivo non
+       fa che sommarle. */
+    if(inSezione) aggiungiRataIn(S.active); else aggiungiRataOvunque();
     tocca(); aggiornaTotali();
-    const ultimo=$$('#riquadroTotali .rt.acconto').pop();
-    ultimo?.querySelector('.nome')?.select();
+    /* la rata nuova è la seconda: è lì che si va a scrivere il nome */
+    $$('#riquadroTotali .rt.acconto')[1]?.querySelector('.nome')?.select();
   });
 
-  /* Le rate impostate a mano in questa sezione tornano a seguire la
-     predefinita: si cancella la loro annotazione, non si riscrive niente. */
-  const rimetti=$('#btnRimettiAcconti');
-  if(rimetti) rimetti.onclick=()=>{
-    for(const a of S.acconti){
-      if(!a.sez) continue;
-      if(S.active===ID_TOT) delete a.sez; else delete a.sez[S.active];
-    }
-    /* tornando al predefinito le rate smettono anche di essere «scritte a
-       mano»: da qui in avanti si lasciano di nuovo pareggiare */
-    if(S.active===ID_TOT){ for(const a of S.acconti) delete a.fissa; } else liberaRate(S.active);
-    tocca(); aggiornaTotali();
-  };
-
   $$('#riquadroTotali .rt.acconto').forEach(el=>{
-    const a=S.acconti[+el.dataset.i];
-    if(!a) return;
+    const i=+el.dataset.i;
+    if(!accontiDelFoglio(S.active)[i]) return;
     const nome=el.querySelector('.nome'), perc=el.querySelector('.perc'), imp=el.querySelector('.imp');
-    const indice=+el.dataset.i;
-    nome.oninput=()=>{ a.nome=nome.value; nome.title=nome.value; tocca(); };
 
-    /* La percentuale scritta va dove deve: nella sezione aperta, o nella
-       predefinita se si sta nel complessivo. Poi le ALTRE rate della stessa
-       sezione si aggiustano da sé per fare 100. */
+    nome.oninput=()=>{
+      if(inSezione) rateSezione(S.active)[i].nome=nome.value;
+      else rinominaDalTotale(i,nome.value);
+      nome.title=nome.value; tocca();
+    };
+
+    /* La percentuale: in una sezione tocca alla sua rata, dal complessivo a
+       quella corrispondente di ogni sezione. Poi, dentro ogni sezione, le
+       altre rate si aggiustano da sé per fare 100. */
     const scritta=valore=>{
-      fissaRata(a,S.active);
-      impostaPerc(a,S.active,valore);
-      bilanciaAcconti(indice,S.active);
+      if(inSezione) scriviPercIn(S.active,i,valore);
+      else scriviPercDalTotale(i,valore);
       riscriviPercentuali(perc);
       tocca(); ricalcolaAcconti();
     };
     perc.oninput=()=>scritta(perc.value);
     perc.onblur=()=>{
       if(perc.value.trim()==='') return;
-      /* Una rata sta fra 0 e 100: finito di scrivere, la cifra si riporta nei
-         limiti. Non lo si fa mentre si digita, o scrivendo «100» il campo
-         verrebbe corretto già al primo «1». */
       /* Se nel campo c'è ancora quello che ci abbiamo scritto noi — la
          percentuale accorciata per leggerla — non si tocca niente: riscrivendo
          quella corta, l'importo pattuito si sposterebbe di qualche centesimo. */
-      const piena=percAcconto(a,S.active);
+      const piena=accontiDelFoglio(S.active)[i]?.perc ?? '';
       if(perc.value.trim()===percCorta(piena)) return;
       const v=percPiena(Math.max(0,Math.min(100,numIT(perc.value))));
       scritta(v); perc.value=percCorta(v);
@@ -2113,96 +2212,62 @@ function legaConcordato(){
        in poi è una rata come le altre, e il complessivo se ne accorge. */
     if(imp){
       const daImporto=()=>{
-        fissaRata(a,S.active);
         const base=baseAcconti(S.active);
         const quota = base ? numIT(imp.value)*100/base : 0;
-        impostaPerc(a,S.active,percPiena(Math.max(0,Math.min(100,quota))));
-        bilanciaAcconti(indice,S.active);
-        riscriviPercentuali(null);          // qui si scrive nell'importo: le percentuali si riscrivono tutte
+        scriviPercIn(S.active,i,percPiena(Math.max(0,Math.min(100,quota))));
+        riscriviPercentuali(null);      // si scrive nell'importo: le percentuali si riscrivono tutte
         tocca(); ricalcolaAcconti(imp);
       };
       imp.oninput=daImporto;
-      imp.onblur=()=>{ daImporto(); imp.value=fmtNum(importoAcconto(a,S.active)); };
+      imp.onblur=()=>{ daImporto(); imp.value=fmtNum(accontiDelFoglio(S.active)[i]?.importo||0); };
     }
 
     el.querySelector('[data-act="delacc"]').onclick=()=>{
-      S.acconti=S.acconti.filter(x=>x.id!==a.id);
-      normalizzaAcconti();                  // le rimaste tornano a fare 100
+      const x=accontiDelFoglio(S.active)[i];
+      if(inSezione) togliRataIn(S.active,x.id); else togliRataDalTotale(i);
       tocca(); aggiornaTotali();
     };
   });
 }
 
-/* Le rate devono fare 100. Toccandone una, a pareggiare il conto si muove UNA
-   SOLA delle altre: l'ultima, che è la rata del saldo — «il rimanente». Se è
-   proprio lei quella che si sta scrivendo, tocca alla penultima.
+/* Le rate di una sezione devono fare 100. Toccandone una, a pareggiare il
+   conto si muove UNA SOLA delle altre: l'ultima, che è la rata del saldo — «il
+   rimanente» — e se lei non basta si risale a quella sopra.
 
-   Prima la differenza si spalmava su tutte in proporzione, e con tre rate
-   succedeva questo: 4.000 sulla prima, 100 sulla seconda, e la terza — che
-   valeva zero e quindi non pesava — restava a zero mentre la prima schizzava a
-   7.900. Le cifre già decise a mano non si toccano: si muove il saldo, che è
-   lì per quello. Con due rate o con cento la regola non cambia. */
-function bilanciaAcconti(i,tabId){
-  if(S.acconti.length<2) return;                 // con una rata sola non c'è niente da bilanciare
-  pareggiaAcconti(tabId,i);
-}
-
-/* Rimette il conto a 100 partendo dal basso: la differenza la prende la rata
-   del saldo — l'ultima — e se lei non basta si risale a quella sopra, e così
-   via. La rata che si sta scrivendo non si tocca mai, e nessuna scende
-   sottozero.
-
-   Serve proprio questo: con tre rate, 4.000 sulla prima e 100 sulla seconda,
-   la terza deve trovarsi 3.900 da sé — non la prima a schizzare a 7.900. E con
-   otto rate, se quella in fondo è già a zero e non può assorbire, la
-   differenza la prende la prima che sopra di lei ha qualcosa da cedere. */
-function pareggiaAcconti(tabId,escluso){
-  const n=S.acconti.length;
-  /* Se sono state scritte a mano TUTTE le altre non c'è dove mettere la
-     differenza: le rate non fanno 100 e l'avviso sotto al riquadro lo dice.
-     Meglio un avviso che una cifra cambiata alle spalle di chi l'ha scritta. */
-  const val = k => Math.max(0,numIT(percAcconto(S.acconti[k],tabId)));
-  let differenza = 100 - S.acconti.reduce((somma,_,k)=>somma+val(k),0);
+   Le rate su cui si è scritto non si toccano: la loro cifra è una decisione,
+   non un calcolo. Se sono state scritte tutte non c'è dove mettere la
+   differenza: le rate non fanno 100 e l'avviso sotto al riquadro lo dice —
+   meglio un avviso che una cifra cambiata alle spalle di chi l'ha scritta. */
+function pareggiaRate(tabId,escluso,comando){
+  const rate=rateSezione(tabId), n=rate.length;
+  if(n<2) return;
+  const val = k => Math.max(0,numIT(rate[k].perc));
+  let differenza = 100 - rate.reduce((somma,_,k)=>somma+val(k),0);
   for(let k=n-1; k>=0 && Math.abs(differenza)>1e-9; k--){
     if(k===escluso) continue;
-    if(rataFissata(S.acconti[k],tabId)) continue;   // scritta a mano: non si tocca
+    if(rate[k].fissa && !comando) continue;        // scritta a mano: non si tocca
     const attuale=val(k);
     const nuovo=Math.max(0,attuale+differenza);
-    if(nuovo===attuale) continue;                // già a zero e c'è da togliere: si sale
-    impostaPerc(S.acconti[k],tabId,percPiena(nuovo));
+    if(nuovo===attuale) continue;                  // già a zero e c'è da togliere: si sale
+    rate[k].perc=percPiena(nuovo);
+    /* mossa da un comando del complessivo, quella cifra non è più quella
+       scritta a mano: smette di essere intoccabile */
+    if(comando) rate[k].fissa=false;
     differenza-=(nuovo-attuale);
   }
 }
 
-/* Tolta una rata, quelle rimaste tornano a fare 100 mantenendo le proporzioni
-   di prima: 50/30/20 senza la seconda diventa 71,43/28,57. */
-function normalizzaAcconti(){
-  if(!S.acconti.length) return;
-  normalizzaIn(ID_TOT);                                   // le predefinite
-  for(const t of tabVoci()) if(sezioneRitoccata(t.id)) normalizzaIn(t.id);
-}
-/* Tolta una rata, il conto lo pareggia il saldo, con la stessa regola: le
-   altre restano quelle che erano. Ridistribuendo in proporzione cambierebbero
-   tutte, e chi aveva scritto «4.000 alla conferma» se lo ritroverebbe diverso
-   per aver cancellato tutt'altra riga. */
-function normalizzaIn(tabId){
-  if(!S.acconti.length) return;
-  pareggiaAcconti(tabId,-1);
-}
-
 /* Riporta nei campi le percentuali ricalcolate, tranne quello in cui si sta
-   scrivendo. Va scritta quella della SEZIONE APERTA: prendendo la predefinita,
-   digitando l'importo di un acconto in una sezione il campo della percentuale
-   veniva riportato al 50% a ogni tasto, e sembrava che l'app non tenesse dietro. */
+   scrivendo: corta per leggerla, con quella intera nel suggerimento. */
 function riscriviPercentuali(escluso){
+  const rate=accontiDelFoglio(S.active);
   $$('#riquadroTotali .rt.acconto').forEach(el=>{
-    const a=S.acconti[+el.dataset.i]; if(!a) return;
+    const x=rate[+el.dataset.i]; if(!x) return;
     const inp=el.querySelector('.perc');
     if(!inp || inp===escluso) return;
-    const piena=percMostrata(a,S.active);
-    const corta=percCorta(piena);
+    const corta=percCorta(x.perc);
     if(inp.value!==corta) inp.value=corta;
-    inp.title=inp.title.replace(/ — esatta: .*$/,'')+' — esatta: '+percEsatta(piena)+'%';
+    inp.title=inp.title.replace(/ — esatta: .*$/,'')+' — esatta: '+percEsatta(x.perc)+'%';
   });
 }
 
@@ -2222,19 +2287,18 @@ function ricalcolaSconto(){
 
 /** riscrive i soli importi delle rate: il campo in cui si scrive non si tocca */
 function ricalcolaAcconti(escluso){
+  const rate=accontiDelFoglio(S.active);
   $$('#riquadroTotali .rt.acconto').forEach(el=>{
-    const a=S.acconti[+el.dataset.i];
-    if(!a) return;
+    const x=rate[+el.dataset.i];
+    if(!x) return;
     const imp=el.querySelector('.imp');
-    if(imp){ if(imp!==escluso) imp.value=fmtNum(importoAcconto(a,S.active)); }
-    else el.querySelector('.v').textContent=fmtEur(importoAcconto(a,S.active));
-    el.classList.toggle('ritoccata',accontoRitoccato(a,S.active));
+    if(imp){ if(imp!==escluso) imp.value=fmtNum(x.importo); }
+    else el.querySelector('.v').textContent=fmtEur(x.importo);
+    el.classList.toggle('ritoccata',!!x.fissa);
   });
-  const mano=$('#notaMano');
-  if(mano) mano.hidden=!rateAMano(S.active);
   const avviso=$('#riquadroTotali .notaconc.avviso');
   if(avviso){
-    const somma=cent(S.acconti.reduce((s,a)=>s+numIT(percMostrata(a,S.active)),0));
+    const somma=cent(rate.reduce((s,x)=>s+numIT(x.perc),0));
     avviso.hidden = somma===100;
     avviso.textContent = `Le rate sommano al ${fmtQty(somma)}%.`;
   }
@@ -2983,19 +3047,9 @@ function menuSeleziona(tasto){
   },0);
 }
 
-/* Una sezione tolta dal complessivo si stacca anche dalle rate: le percentuali
-   che aveva in quel momento diventano sue. Senza questo, cambiando le rate dal
-   complessivo cambierebbero anche a lei — che con quel totale non c'entra più
-   niente. Rimettendola dentro, se le sue percentuali sono rimaste quelle
-   predefinite torna semplicemente a seguirle. */
-function staccaAccontiDi(tabId){
-  for(const a of S.acconti) impostaPerc(a,tabId,percAcconto(a,tabId));
-}
-
-function riattaccaAccontiDi(tabId){
-  for(const a of S.acconti)
-    if(a.sez && a.sez[tabId]!=null && numIT(a.sez[tabId])===numIT(a.perc)) delete a.sez[tabId];
-}
+/* Le rate di una sezione sono sue e basta: togliendola dal complessivo non c'è
+   più niente da staccare, e rimettendola dentro niente da riattaccare — il
+   complessivo semplicemente smette di contarla, o ricomincia. */
 
 /* Quali sezioni entrano nel complessivo. Togliendone una, il preventivo
    complessivo smette di contarla: la sezione resta al suo posto, intatta, e
@@ -3022,8 +3076,6 @@ function menuSezioniTotale(tasto){
   const applica=()=>{
     const prima=new Set(Array.isArray(S.escluse)?S.escluse:[]);
     const ora=[...m.querySelectorAll('input[type="checkbox"]:not(:checked)')].map(c=>c.dataset.id);
-    for(const id of ora)   if(!prima.has(id))    staccaAccontiDi(id);      // appena tolta
-    for(const id of prima) if(!ora.includes(id)) riattaccaAccontiDi(id);   // appena rimessa
     S.escluse=ora;
     tocca(); render();
   };
@@ -4124,6 +4176,8 @@ function caricaDocumento(testo,percorso){
   S=Object.assign(NUOVO(),doc);
   S.cliente=Object.assign({nome:'',indirizzo:'',cell:'',mail:''},doc.cliente||{});
   S.righe=migraPromo((doc.righe||[]).map(r=>Object.assign({id:uid(),tabId:S.tabs[1]?.id||ID_TOT},r)));
+  S.rate=migraRate(doc);          // dall'elenco unico alle rate di ogni sezione
+  delete S.acconti;               // il vecchio elenco ha finito il suo lavoro
   if(!S.tabs.some(t=>t.type==='tot')) S.tabs.unshift({id:ID_TOT,type:'tot',name:'PREVENTIVO COMPLESSIVO',icon:'Σ'});
   if(!tabById(S.active)) S.active=(tabVoci()[0]||S.tabs[0]).id;
   /* Prezzo concordato: i file scritti prima della ripartizione avevano un

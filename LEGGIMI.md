@@ -87,34 +87,29 @@ riga **SCONTO** con la differenza e la percentuale. Le due righe finiscono anche
 in stampa, nel PDF e nell'Excel, e lì la cifra che chiude il conto diventa il
 prezzo concordato. Il `×` accanto al prezzo lo toglie e tutto torna com'era.
 
-**Acconti.** Sotto ai totali ci sono già le due scadenze che si usano quasi
-sempre — `ACCONTO ALLA CONFERMA D'ORDINE` al 50% e `RIMANENTE A LAVORI CONCLUSI`
-al 50%. Nome e **percentuale si scrivono a mano**, l'importo lo calcola l'app sul
-prezzo concordato, o sul totale ivato se il concordato non c'è. Il `＋` sotto al
-riquadro aggiunge un'altra rata, la `×` ne toglie una. Se le percentuali non
-fanno 100 l'app te lo dice ma non ti ferma. Anche le rate finiscono in stampa,
-nel PDF e nell'Excel.
+**Acconti.** Ogni sezione ha le **sue** rate: sotto ai totali ci sono già le due
+scadenze che si usano quasi sempre —  al 50% e
+ al 50%. Aggiungerne una in una sezione **non** la
+aggiunge alle altre. Il tasto  sta sotto alla prima:
+le rate nuove nascono lì, in mezzo, e il rimanente resta in fondo.
 
-Nelle sezioni si può scrivere **anche l'importo** al posto della percentuale:
-digitando `2.181,50` la percentuale si ricava da lì, esatta al centesimo. Quello
-che si scrive resta dov'è: a pareggiare il conto a 100 si muove una sola delle
-altre rate, quella del saldo in fondo — e se lei non basta, si risale a quella
-sopra. Con tre rate su 8.000 €, scrivendo 4.000 sulla prima e 100 sulla seconda,
-la terza si trova da sé i suoi 3.900.
+Nome e percentuale si scrivono a mano; nelle sezioni si può scrivere **anche
+l'importo**, e la percentuale si ricava da lì, esatta al centesimo. Quello che
+scrivi resta dov'è: a pareggiare il conto a 100 si muove una sola delle altre
+rate, quella del saldo in fondo — e se lei non basta, quella sopra. Se sono
+state scritte tutte, le rate non fanno 100 e l'app te lo dice senza fermarti.
 
-Le rate di una sezione valgono solo per lei: le altre continuano a seguire la
-percentuale predefinita finché non le si tocca.
+Nel **preventivo complessivo** le rate non si scrivono: si sommano. La prima con
+le prime, l'ultima con le ultime, quelle in mezzo per posizione.
 
-Nel **preventivo complessivo** ogni rata è la **somma delle rate di pari numero**
-delle sezioni: le prime con le prime, le seconde con le seconde. Una sezione che
-di rate ne usa due semplicemente non aggiunge niente alla terza.
+    Sezione 1:   acconto 300              rimanente 300
+    Sezione 2:   acconto 400   rata 200   rimanente 300
+    Complessivo:         700         200            600
 
-    Sezione 1:   300 + 300
-    Sezione 2:   400 + 200 + 300
-    Complessivo: 700 + 500 + 300
-
-Le rate senza importo non finiscono in stampa: la sezione qui sopra che usa due
-rate ne stampa due, non tre con una da zero euro.
+Scrivendo lì dentro, però, si detta la regola per tutti: cambiando una
+percentuale nel complessivo la seguono tutte le sezioni, e aggiungendo una rata
+la si aggiunge a ognuna. Le rate senza importo non finiscono in stampa: una
+sezione che usa due rate ne stampa due, non tre con una da zero euro.
 
 **Stampa ed esportazione.** `▯ Verticale` / `▭ Orizzontale` sceglie il formato A4;
 il foglio a schermo è già largo quanto quello che uscirà. Quando le voci non
