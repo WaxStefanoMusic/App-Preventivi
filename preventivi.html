@@ -2942,13 +2942,18 @@ function foglioStampaHTML(tabId){
         const p=r.promo!=null;
         /* Sul foglio la riga in promo va a capo dentro se stessa: sopra il
            prezzo di prima con i suoi conti, sbarrato; sotto quello promo. */
+        /* Il prezzo della riga: senza promo è LUI che va scritto anche sotto.
+           Passando il promo — vuoto, quando promo non ce n'è — la colonna
+           «Prezzo unitario» restava in bianco su tutti i preventivi normali. */
+        const prezzoPieno = r.prezzo===''?'':fmtNum(numIT(r.prezzo));
+        const prezzoPromo = String(r.promo??'').trim()===''?'':fmtNum(numIT(r.promo));
         const due=(sopra,sotto)=>p
           ? `<span class="orig">${sopra}</span><span class="pro">${sotto}</span>`
           : sotto;
         return `<tr${p?' class="conpromo"':''}>
           <td class="art">${esc(r.articolo)}</td>
           <td class="desc">${esc(r.descrizione)}</td>
-          <td class="num">${due(r.prezzo===''?'':fmtNum(numIT(r.prezzo)), String(r.promo??'').trim()===''?'':fmtNum(numIT(r.promo)))}</td>
+          <td class="num">${due(prezzoPieno, p?prezzoPromo:prezzoPieno)}</td>
           <td class="num mezzo">${r.qta===''?'':fmtQty(numIT(r.qta))}</td>
           <td class="num">${due(fmtNum(c.originale.imponibile), fmtNum(c.imponibile))}</td>
           <td class="num mezzo">${fmtQty(c.aliquota)}</td>
