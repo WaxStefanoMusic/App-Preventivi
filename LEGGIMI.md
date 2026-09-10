@@ -177,8 +177,13 @@ dall'elenco.
 
 **Tasto destro.** Sui campi in cui si scrive compaiono i comandi di Windows
 (Taglia, Copia, Incolla). Su un **TAB** si aggiungono *Duplica la sezione*,
-*Rinomina*, *Elimina*. Su una **riga** si aggiungono *Duplica la riga*, *Promo* e
-*Elimina*.
+*Rinomina*, *Elimina*. Su una **riga** si aggiungono *Duplica Riga*, *Copia Riga*,
+*Promo* e *Elimina*.
+
+Copiata una riga compare anche *Incolla Riga*, che la rimette sotto alla riga su
+cui hai premuto — nella sezione di quella riga, quindi anche **da una sezione
+all'altra**. La riga copiata resta negli appunti dell'app finché è aperta, e si
+può incollare quante volte serve.
 
 **Promo.** Sbarra il prezzo che c'era e apre sotto una riga gemella dove scrivere
 quello nuovo. Il prezzo vecchio resta a vista — sul foglio e in Excel — ma

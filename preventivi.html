@@ -1633,6 +1633,37 @@ function eliminaRiga(id){
   S.righe.splice(i,1); tocca(); render();
 }
 
+/* La riga negli appunti dell'app. Non sono gli appunti di Windows: lì dentro
+   ci finisce del testo, mentre qui serve la riga intera — articolo,
+   descrizione, prezzo, quantità, IVA, promo — per rimetterla giù uguale anche
+   in un'altra sezione. Vive finché l'app è aperta. */
+let rigaCopiata=null;
+
+function copiaRiga(id){
+  const r=rigaById(id); if(!r) return;
+  const {id:_via, tabId:_pure, ...dati} = r;    // id e sezione se li prende chi incolla
+  rigaCopiata=dati;
+  toast('Riga copiata: «'+(r.articolo||r.descrizione||'senza nome')+'»','ok');
+}
+
+/* Incolla sotto alla riga su cui si è premuto, dentro la SUA sezione: è lì che
+   si sta guardando. Da una sezione all'altra funziona uguale — la riga non si
+   porta dietro la sezione di provenienza, la prende da dove atterra. */
+function incollaRiga(id){
+  if(!rigaCopiata) return;
+  const rif=rigaById(id);
+  const tabId = rif ? rif.tabId : (S.active!==ID_TOT ? S.active : (tabVoci()[0]||{}).id);
+  if(!tabId) return toast('Non c\'è una sezione dove incollarla','err');
+  const nuova=Object.assign({},rigaCopiata,{id:uid(),tabId});
+  const dove = rif ? S.righe.indexOf(rif)+1 : S.righe.length;
+  S.righe.splice(dove,0,nuova);
+  tocca(); render();
+  $(`#corpo tr[data-id="${nuova.id}"]`)?.scrollIntoView({block:'nearest'});
+  const sez=tabById(tabId);
+  toast('Riga incollata'+(sez&&S.active!==tabId?' in «'+sez.name+'»':''),'ok');
+  return nuova;
+}
+
 /** una copia della riga, subito sotto l'originale */
 function duplicaRiga(id){
   const i=S.righe.findIndex(r=>r.id===id);
@@ -4302,13 +4333,15 @@ function contestoDaEvento(e){
   const tr=e.target.closest('#corpo tr[data-id]');
   if(tr){
     const r=rigaById(tr.dataset.id);
-    return {tipo:'riga', id:tr.dataset.id, barrato:!!(r&&r.barrato)};
+    return {tipo:'riga', id:tr.dataset.id, barrato:!!(r&&r.barrato), copiato:!!rigaCopiata};
   }
   return {tipo:'testo'};
 }
 
 function eseguiAzioneMenu(azione,id){
   if(azione==='duplicaRiga') duplicaRiga(id);
+  if(azione==='copiaRiga')   copiaRiga(id);
+  if(azione==='incollaRiga') incollaRiga(id);
   if(azione==='promo')       promoRiga(id);
   if(azione==='duplicaTab')  duplicaTab(id);
   if(azione==='eliminaRiga') eliminaRiga(id);
@@ -4353,7 +4386,9 @@ function menuDom(ctx,x,y){
   chiudiMenuDom();
   const voci = ctx.tipo==='tab'
     ? [['Duplica la sezione','duplicaTab'],['Rinomina…','rinominaTab'],['Elimina','eliminaTab']]
-    : [['Duplica la riga','duplicaRiga'],[ctx.barrato?'Togli la barratura':'Promo','promo'],['Elimina','eliminaRiga']];
+    : [['Duplica Riga','duplicaRiga'],['Copia Riga','copiaRiga'],
+       ...(rigaCopiata?[['Incolla Riga','incollaRiga']]:[]),
+       [ctx.barrato?'Togli la barratura':'Promo','promo'],['Elimina','eliminaRiga']];
   const m=document.createElement('div');
   m.className='menuctx';
   m.innerHTML=voci.map(([t,a])=>`<button data-a="${a}">${esc(t)}</button>`).join('');

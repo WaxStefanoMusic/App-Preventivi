@@ -954,7 +954,11 @@ ipcMain.handle('menu:contestuale', (e, ctx = {}) => {
     voci.push({ label: 'Rinomina…', click: () => manda('rinominaTab') });
     voci.push({ label: 'Elimina la sezione', click: () => manda('eliminaTab') });
   } else if (ctx.tipo === 'riga') {
-    voci.push({ label: 'Duplica la riga', click: () => manda('duplicaRiga') });
+    voci.push({ label: 'Duplica Riga', click: () => manda('duplicaRiga') });
+    voci.push({ label: 'Copia Riga', click: () => manda('copiaRiga') });
+    /* «Incolla Riga» compare solo se c'è qualcosa da incollare: se lo sa la
+       pagina, che tiene la riga copiata, e ce lo dice insieme al resto. */
+    if (ctx.copiato) voci.push({ label: 'Incolla Riga', click: () => manda('incollaRiga') });
     voci.push({ label: ctx.barrato ? 'Togli la barratura' : 'Promo', click: () => manda('promo') });
     voci.push({ label: 'Elimina la riga', click: () => manda('eliminaRiga') });
   }
