@@ -2593,13 +2593,13 @@ function dialogoPrimaCartella(){
    «Nuovo», e solo a chi sta davvero creando un preventivo. */
 function dialogoAvvio(){
   modal('App Preventivi',`
-    <p style="margin:0">Da dove vuoi partire?</p>
-    <p class="hint">Con <b>Nuovo</b> dai un nome al preventivo e l'app gli prepara cartella e
-    backup. Con <b>Carica Preventivo</b> apri un file dalla cartella dei salvataggi, con
-    <b>Recenti</b> uno degli ultimi su cui hai lavorato.</p>
+    <p style="margin:0 0 6px"><b>Nuovo</b>: dai un nome al preventivo e l'app gli prepara cartella di
+    salvataggio e backup.</p>
+    <p style="margin:0 0 6px"><b>Apri Preventivo</b>: apri un Preventivo che hai già salvato.</p>
+    <p style="margin:0"><b>Recenti</b>: apri uno degli ultimi Preventivi su cui hai lavorato.</p>
   `,
   [{label:'✚ Nuovo',primary:true,fn:()=>{ setTimeout(()=>dialogoNome(true,true),50); }},
-   {label:'📂 Carica Preventivo',fn:()=>{ setTimeout(apriPreventivo,50); }},
+   {label:'📂 Apri Preventivo',fn:()=>{ setTimeout(apriPreventivo,50); }},
    {label:'🕘 Recenti',fn:()=>{ setTimeout(dialogoRecenti,50); }},
    {label:'Chiudi'}],
   null,'conx');

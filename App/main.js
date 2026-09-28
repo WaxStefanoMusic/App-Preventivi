@@ -896,7 +896,9 @@ ipcMain.handle('stampa:anteprima', async (_e, { orizzontale, titolo } = {}) => {
     winAnteprima.on('closed', () => { winAnteprima = null; });
 
     await winAnteprima.loadURL(base + '#zoom=' + zoomChiesto);
-    azzera();
+    /* qui c'era «azzera», una funzione sparita quando lo zoom è passato a
+       «riafferma»: l'anteprima si apriva, ma l'errore arrivava alla pagina */
+    riafferma();
     return { ok: true };
   } catch (e) { return { errore: e.message }; }
 });
