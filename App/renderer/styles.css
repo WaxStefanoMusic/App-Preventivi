@@ -90,12 +90,16 @@ header.app{
   display:flex;align-items:center;gap:12px;padding:10px 16px;
   background:var(--surface-1);border-bottom:1px solid var(--border);flex:0 0 auto;
 }
-.brand{display:flex;align-items:center;gap:9px;font-weight:640;letter-spacing:-.01em;white-space:nowrap}
-.brand .logo{
-  width:26px;height:26px;border-radius:7px;background:var(--accent);color:#fff;
-  display:grid;place-items:center;font-size:14px;flex:0 0 auto;
+/* In alto a sinistra il nome del preventivo, con la sua etichetta davanti: è
+   la cosa che si guarda per sapere su che cosa si sta lavorando, e con più
+   finestre aperte è quella che le distingue. */
+/* il nome non si lascia schiacciare: se manca spazio, a stringersi sono i
+   tasti (vedi «adattaTestata»), non il nome del preventivo */
+.nomefile{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.etnome{
+  flex:0 0 auto;font-size:11.5px;font-weight:700;letter-spacing:.04em;
+  color:var(--ink-2);white-space:nowrap;
 }
-.brand small{display:block;font-weight:420;color:var(--ink-3);font-size:11px;line-height:1}
 .spacer{flex:1 1 0;min-width:0}
 /* I due tasti al centro della testata: dove si salva, e come si mette al sicuro.
    Centrati sulla finestra, non fra i due gruppi di pulsanti — che hanno pesi
@@ -119,38 +123,41 @@ header.app .ic{display:none}
 @media (max-width:1399px){
   header.app{gap:8px;padding:10px 12px}
   header.app button{font-size:12px;padding:5px 9px;gap:5px}
-  .docname{max-width:24ch}
+  .docname{max-width:34ch}
 }
 @media (max-width:1150px){
   header.app{gap:5px;padding:9px 10px}
   header.app button{font-size:11.5px;padding:4px 7px;gap:4px}
-  .brand small{display:none}
-  .docname{max-width:18ch;font-size:12px}
+  .docname{max-width:24ch;font-size:12px}
 }
 /* Gli stessi due gradini, ma decisi misurando invece che a occhio: li mette
    «adattaTestata» quando i tasti non ci stanno in larghezza. */
 header.app.stretta{gap:8px;padding:8px 12px}
 header.app.stretta button{font-size:11.5px;padding:4px 7px;gap:4px}
-header.app.stretta .brand small{display:none}
-header.app.stretta .docname{max-width:18ch;font-size:12px}
+header.app.stretta .docname{max-width:24ch;font-size:12px}
+header.app.stretta .etnome{font-size:10.5px}
+header.app.senzaetichetta .etnome{display:none}
 header.app.icone .et{display:none}
 header.app.icone .ic{display:inline}
 header.app.icone button{font-size:14px;padding:4px 8px}
-header.app.icone .docname{max-width:14ch}
+header.app.icone .docname{max-width:18ch}
+/* con le sole icone anche l'etichetta cede il posto: il nome resta */
+header.app.icone .etnome{display:none}
 
 /* sotto questa misura restano le sole icone: i nomi sono nei suggerimenti */
 @media (max-width:980px){
   header.app .et{display:none}
   header.app .ic{display:inline}
   header.app button{font-size:14px;padding:4px 8px}
-  .docname{max-width:14ch}
+  .docname{max-width:16ch}
+  .etnome{display:none}
 }
 /* Nome del preventivo: si preme per cambiarlo */
 .docname{
-  font-size:12.5px;color:var(--ink-2);max-width:34ch;overflow:hidden;
+  font-size:13px;color:var(--ink-1);font-weight:560;max-width:40ch;min-width:18ch;overflow:hidden;
   text-overflow:ellipsis;white-space:nowrap;
-  padding:4px 9px;border-radius:7px;cursor:pointer;
-  border:1px solid transparent;
+  padding:4px 10px;border-radius:7px;cursor:pointer;
+  border:1px solid var(--border);background:var(--surface-1);
 }
 .docname:hover{background:var(--plane);border-color:var(--border);color:var(--ink-1)}
 .docname:focus-visible{outline:2px solid var(--accent);outline-offset:-1px}

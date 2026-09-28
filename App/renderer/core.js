@@ -3626,9 +3626,13 @@ function adattaTestata(){
     const u=h.lastElementChild; if(!u) return false;
     return u.getBoundingClientRect().right > h.getBoundingClientRect().right-6;
   };
-  h.classList.remove('stretta','icone');
+  h.classList.remove('stretta','senzaetichetta','icone');
   if(!trabocca()) return;
   h.classList.add('stretta');
+  if(!trabocca()) return;
+  /* prima di togliere i nomi ai tasti si toglie l'etichetta davanti al nome
+     del preventivo: il nome resta, e dice da sé che cos'è */
+  h.classList.add('senzaetichetta');
   if(!trabocca()) return;
   h.classList.add('icone');
 }
