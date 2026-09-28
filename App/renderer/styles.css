@@ -95,7 +95,7 @@ header.app{
    finestre aperte è quella che le distingue. */
 /* il nome non si lascia schiacciare: se manca spazio, a stringersi sono i
    tasti (vedi «adattaTestata»), non il nome del preventivo */
-.nomefile{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.nomefile{display:flex;align-items:center;gap:8px;flex:10 1 auto}
 .etnome{
   flex:0 0 auto;font-size:11.5px;font-weight:700;letter-spacing:.04em;
   color:var(--ink-2);white-space:nowrap;
@@ -119,28 +119,29 @@ header.app .ic{display:none}
 @media (min-width:1700px){
   header.app{position:relative}
   .centrali{position:absolute;left:50%;transform:translateX(-50%)}
+  /* i tasti centrali qui sono inchiodati al centro: il nome si ferma prima */
+  .nomefile{max-width:calc(50% - 360px)}
 }
 @media (max-width:1399px){
   header.app{gap:8px;padding:10px 12px}
   header.app button{font-size:12px;padding:5px 9px;gap:5px}
-  .docname{max-width:34ch}
 }
 @media (max-width:1150px){
   header.app{gap:5px;padding:9px 10px}
   header.app button{font-size:11.5px;padding:4px 7px;gap:4px}
-  .docname{max-width:24ch;font-size:12px}
+  .docname{font-size:12px}
 }
 /* Gli stessi due gradini, ma decisi misurando invece che a occhio: li mette
    «adattaTestata» quando i tasti non ci stanno in larghezza. */
 header.app.stretta{gap:8px;padding:8px 12px}
 header.app.stretta button{font-size:11.5px;padding:4px 7px;gap:4px}
-header.app.stretta .docname{max-width:24ch;font-size:12px}
+header.app.stretta .docname{font-size:12px}
 header.app.stretta .etnome{font-size:10.5px}
 header.app.senzaetichetta .etnome{display:none}
 header.app.icone .et{display:none}
 header.app.icone .ic{display:inline}
 header.app.icone button{font-size:14px;padding:4px 8px}
-header.app.icone .docname{max-width:18ch}
+header.app.icone .docname{min-width:14ch}
 /* con le sole icone anche l'etichetta cede il posto: il nome resta */
 header.app.icone .etnome{display:none}
 
@@ -149,12 +150,12 @@ header.app.icone .etnome{display:none}
   header.app .et{display:none}
   header.app .ic{display:inline}
   header.app button{font-size:14px;padding:4px 8px}
-  .docname{max-width:16ch}
+  .docname{min-width:12ch}
   .etnome{display:none}
 }
 /* Nome del preventivo: si preme per cambiarlo */
 .docname{
-  font-size:13px;color:var(--ink-1);font-weight:560;max-width:40ch;min-width:18ch;overflow:hidden;
+  font-size:13px;color:var(--ink-1);font-weight:560;flex:1 1 auto;max-width:52ch;min-width:18ch;overflow:hidden;
   text-overflow:ellipsis;white-space:nowrap;
   padding:4px 10px;border-radius:7px;cursor:pointer;
   border:1px solid var(--border);background:var(--surface-1);
