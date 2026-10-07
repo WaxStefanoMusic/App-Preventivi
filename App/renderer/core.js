@@ -2215,6 +2215,23 @@ function costruisciStampa(){
     .join('');
 }
 
+/* Una riga della tabella stampata di solito non si spezza fra due pagine:
+   tagliata a metà, una voce di due righe è brutta da leggere, e la si sposta
+   intera alla pagina dopo. Ma una voce con una descrizione lunghissima,
+   spostata intera, lasciava la pagina precedente vuota — l'intestazione e
+   basta, con la tabella cominciata solo sulla seconda. Quelle si lasciano
+   continuare sulla pagina dopo, come in un documento qualsiasi.
+   Il foglio di stampa a schermo non si vede, quindi non lo si può misurare:
+   la lunghezza si stima dal testo — le righe scritte, più quelle che vanno a
+   capo da sole nella colonna Descrizione, larga una trentina di caratteri. */
+const CARATTERI_PER_RIGA_DESC = 32;
+const RIGHE_PER_VOCE_INDIVISIBILE = 8;
+function rigaLunga(descrizione){
+  const righe=String(descrizione||'').split(/\r?\n/)
+    .reduce((n,riga)=>n+Math.max(1,Math.ceil(riga.length/CARATTERI_PER_RIGA_DESC)),0);
+  return righe>RIGHE_PER_VOCE_INDIVISIBILE;
+}
+
 function foglioStampaHTML(tabId){
   const t=tabById(tabId)||tabCorrente();
   const righe=righeDi(t.id);
@@ -2245,7 +2262,8 @@ function foglioStampaHTML(tabId){
         const due=(sopra,sotto)=>p
           ? `<span class="orig">${sopra}</span><span class="pro">${sotto}</span>`
           : sotto;
-        return `<tr${p?' class="conpromo"':''}>
+        const classi=[p?'conpromo':'', rigaLunga(r.descrizione)?'lunga':''].filter(Boolean).join(' ');
+        return `<tr${classi?' class="'+classi+'"':''}>
           <td class="art">${esc(r.articolo)}</td>
           <td class="desc">${esc(r.descrizione)}</td>
           <td class="num">${due(prezzoPieno, p?prezzoPromo:prezzoPieno)}</td>

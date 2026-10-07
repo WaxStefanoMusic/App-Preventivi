@@ -852,6 +852,12 @@ textarea.grande{
   table.st-tab .orig{text-decoration:line-through;color:#777}
   table.st-tab .pro{font-weight:400}
   table.st-tab tr{break-inside:avoid;page-break-inside:avoid}
+  /* la voce con una descrizione lunghissima continua sulla pagina dopo,
+     invece di saltarci intera lasciando vuota quella da cui partiva */
+  table.st-tab tr.lunga{break-inside:auto;page-break-inside:auto}
+  /* il pezzo che continua sulla pagina dopo ripete il margine della cella:
+     altrimenti il testo partirebbe attaccato alla testata delle colonne */
+  table.st-tab tr.lunga td{-webkit-box-decoration-break:clone;box-decoration-break:clone}
 
   /* IMPONIBILE TOTALE / IVA / TOTALE restano uniti: se non entrano in
      fondo alla pagina scendono tutti insieme a quella dopo — dove l'intestazione
