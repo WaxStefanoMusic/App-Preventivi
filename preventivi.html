@@ -441,15 +441,12 @@ tr.conpromo input.pro{
   border-color:var(--border);background:var(--surface-1);
 }
 tr.conpromo input.pro::placeholder{color:var(--ink-3);font-weight:400;font-style:italic}
-/* La x che toglie la promo sta sulla riga del prezzo promo, accanto a lui:
-   è quella riga che se ne va. */
-.prorig{display:flex;align-items:center;gap:2px}
-.prorig input.pro{flex:1;min-width:0}
-button.viapromo{
-  flex:0 0 auto;border:0;background:transparent;color:var(--ink-3);
-  padding:0 3px;font-size:16px;line-height:1;
-}
-button.viapromo:hover{color:var(--critical);background:transparent}
+/* La colonna dei tasti è fatta a righe: la prima porta i tasti della voce, la
+   seconda — solo in promo — la x che toglie la promo, all'altezza del prezzo
+   promo e in colonna sotto la x della voce: si vede subito che cosa cancella
+   l'una e che cosa l'altra. */
+td.az .azriga,td.az .azpromo{display:flex;justify-content:flex-end;align-items:center}
+tr.conpromo td.az .azriga,tr.conpromo td.az .azpromo{height:27px}
 tr.conpromo td.calc .pro{color:var(--good-text)}
 
 /* menu del tasto destro, versione per il browser */
@@ -2109,15 +2106,14 @@ function rigaHTML(r,complessivo,indice,quante){
     </td>
     <td>
       <input class="cell-in num orig" data-k="prezzo" value="${r.prezzo===''?'':fmtNum(numIT(r.prezzo))}" placeholder="0,00" inputmode="decimal">
-      ${promo?`<span class="prorig"><input class="cell-in num pro" data-k="promo" value="${String(r.promo).trim()===''?'':fmtNum(numIT(r.promo))}"
-        placeholder="promo" inputmode="decimal" title="Prezzo promozionale: è questo che conta nei totali"><button
-        class="viapromo" data-act="viapromo" title="Togli la promo: la riga torna al suo prezzo">×</button></span>`:''}
+      ${promo?`<input class="cell-in num pro" data-k="promo" value="${String(r.promo).trim()===''?'':fmtNum(numIT(r.promo))}"
+        placeholder="promo" inputmode="decimal" title="Prezzo promozionale: è questo che conta nei totali">`:''}
     </td>
     <td class="cel-mezzo"><input class="cell-in num" data-k="qta" value="${r.qta===''?'':fmtQty(numIT(r.qta))}" placeholder="1" inputmode="decimal"></td>
     <td class="num calc" data-c="imponibile">${due(fmtNum(c.originale.imponibile), fmtNum(c.imponibile))}</td>
     <td class="cel-mezzo"><input class="cell-in num" data-k="iva" value="${r.iva===''?'':fmtQty(numIT(r.iva))}" placeholder="22" inputmode="decimal"></td>
     <td class="num calc" data-c="totale">${due(fmtEur(c.originale.totale), fmtEur(c.totale))}</td>
-    <td class="az">${complessivo?'':`<button data-act="su" title="Sposta la riga in su"${indice===0?' disabled':''}>↑</button><button data-act="giu" title="Sposta la riga in giù"${indice===quante-1?' disabled':''}>↓</button>`}<button data-act="del" title="Elimina la riga">×</button></td>
+    <td class="az"><div class="azriga">${complessivo?'':`<button data-act="su" title="Sposta la riga in su"${indice===0?' disabled':''}>↑</button><button data-act="giu" title="Sposta la riga in giù"${indice===quante-1?' disabled':''}>↓</button>`}<button data-act="del" title="Elimina la riga">×</button></div>${promo?`<div class="azpromo"><button data-act="viapromo" title="Togli la promo: la riga torna al suo prezzo">×</button></div>`:''}</td>
   </tr>`;
 }
 

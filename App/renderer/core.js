@@ -1133,15 +1133,14 @@ function rigaHTML(r,complessivo,indice,quante){
     </td>
     <td>
       <input class="cell-in num orig" data-k="prezzo" value="${r.prezzo===''?'':fmtNum(numIT(r.prezzo))}" placeholder="0,00" inputmode="decimal">
-      ${promo?`<span class="prorig"><input class="cell-in num pro" data-k="promo" value="${String(r.promo).trim()===''?'':fmtNum(numIT(r.promo))}"
-        placeholder="promo" inputmode="decimal" title="Prezzo promozionale: è questo che conta nei totali"><button
-        class="viapromo" data-act="viapromo" title="Togli la promo: la riga torna al suo prezzo">×</button></span>`:''}
+      ${promo?`<input class="cell-in num pro" data-k="promo" value="${String(r.promo).trim()===''?'':fmtNum(numIT(r.promo))}"
+        placeholder="promo" inputmode="decimal" title="Prezzo promozionale: è questo che conta nei totali">`:''}
     </td>
     <td class="cel-mezzo"><input class="cell-in num" data-k="qta" value="${r.qta===''?'':fmtQty(numIT(r.qta))}" placeholder="1" inputmode="decimal"></td>
     <td class="num calc" data-c="imponibile">${due(fmtNum(c.originale.imponibile), fmtNum(c.imponibile))}</td>
     <td class="cel-mezzo"><input class="cell-in num" data-k="iva" value="${r.iva===''?'':fmtQty(numIT(r.iva))}" placeholder="22" inputmode="decimal"></td>
     <td class="num calc" data-c="totale">${due(fmtEur(c.originale.totale), fmtEur(c.totale))}</td>
-    <td class="az">${complessivo?'':`<button data-act="su" title="Sposta la riga in su"${indice===0?' disabled':''}>↑</button><button data-act="giu" title="Sposta la riga in giù"${indice===quante-1?' disabled':''}>↓</button>`}<button data-act="del" title="Elimina la riga">×</button></td>
+    <td class="az"><div class="azriga">${complessivo?'':`<button data-act="su" title="Sposta la riga in su"${indice===0?' disabled':''}>↑</button><button data-act="giu" title="Sposta la riga in giù"${indice===quante-1?' disabled':''}>↓</button>`}<button data-act="del" title="Elimina la riga">×</button></div>${promo?`<div class="azpromo"><button data-act="viapromo" title="Togli la promo: la riga torna al suo prezzo">×</button></div>`:''}</td>
   </tr>`;
 }
 
