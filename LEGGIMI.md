@@ -25,7 +25,7 @@ APP PREVENTIVI\
 ## Come si usa
 
 **TAB.** «PREVENTIVO COMPLESSIVO» somma le righe di tutte le sezioni. Con
-`＋ Sezione` se ne aggiungono altre: doppio clic per rinominarle, si trascinano
+`＋ Preventivo` se ne aggiungono altre (nel codice si chiamano «sezioni»: sezione e preventivo sono la stessa cosa): doppio clic per rinominarle, si trascinano
 per riordinarle. Ogni TAB si stampa per conto suo; quello complessivo li stampa
 tutti insieme.
 

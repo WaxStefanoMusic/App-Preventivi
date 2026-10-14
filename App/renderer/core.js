@@ -759,7 +759,13 @@ function renderTabs(){
   });
   const add=document.createElement('div');
   add.className='tabadd';
-  add.innerHTML=`<button class="sm" id="addTab" title="Aggiunge una sezione del preventivo">＋ Sezione</button>`;
+  /* NOTA SUI NOMI. Nel codice, nei commenti e nei dati questa cosa si chiama
+     «sezione» (S.tabs, tabVoci, rateSezione, «Sezioni nel Preventivo
+     Complessivo»…). A chi usa l'app però il tasto dice «＋ Preventivo»: per chi
+     non conosce il programma è più intuitivo pensare a ogni scheda come a un
+     preventivo a sé. Sezione = Preventivo: è la stessa cosa con due nomi, e se
+     un giorno si rimette mano al codice va tenuta presente l'equivalenza. */
+  add.innerHTML=`<button class="sm" id="addTab" title="Aggiunge un preventivo (una sezione) al preventivo complessivo">＋ Preventivo</button>`;
   bar.appendChild(add);
   $('#addTab').onclick=()=>nuovoTab();
 }
