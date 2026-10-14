@@ -171,9 +171,21 @@ salvati, con data e cartella. Quelli spostati o cancellati spariscono da soli
 dall'elenco.
 
 **Tasto destro.** Sui campi in cui si scrive compaiono i comandi di Windows
-(Taglia, Copia, Incolla) per il testo. Su un **TAB** si aggiungono *Duplica la
-sezione*, *Rinomina*, *Elimina*. Su una **riga** ci sono *Duplica*, *Promo*
-ed *Elimina*.
+(Taglia, Copia, Incolla) per il testo. Su un **preventivo** (le schede in
+alto) ci sono *Duplica il preventivo*, *Rinomina*, poi *Taglia*, *Copia*,
+*Incolla* e in fondo *Elimina il preventivo*. Su una **riga** ci sono
+*Duplica*, *Promo* ed *Elimina*.
+
+**Selezionare i preventivi** (le schede in alto), come in Windows: un clic
+apre il preventivo e lo seleziona; **Ctrl+clic** ne aggiunge o ne toglie uno
+senza aprirlo; **Maiusc+clic** prende tutti quelli fra il preventivo di
+partenza e questo. Taglia, Copia e Incolla — dal tasto destro o con Ctrl+X,
+Ctrl+C, Ctrl+V subito dopo aver cliccato sulle schede — lavorano sui
+preventivi interi (righe, rate, nota): incollati, finiscono in fondo, subito a
+destra di «＋ Preventivo», e restano selezionati. Se un nome c'è già, il nuovo
+si chiama «… (copia)». Il tasto destro su «＋ Preventivo» offre *Incolla*.
+Anche *Duplica* ed *Elimina* valgono per tutti i preventivi selezionati. Il
+complessivo non si seleziona: è la somma degli altri.
 
 **Selezionare le righe**, come in una cartella di Windows: un clic sulla riga
 (dove non si scrive: le cifre, i tasti a destra) la seleziona; **Ctrl+clic**

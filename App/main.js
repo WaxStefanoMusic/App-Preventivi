@@ -978,10 +978,27 @@ ipcMain.handle('menu:contestuale', (e, ctx = {}) => {
     return true;
   }
   if (ctx.tipo === 'tab') {
-    voci.push({ label: 'Duplica il preventivo', click: () => manda('duplicaTab') });
-    voci.push({ label: 'Rinomina…', click: () => manda('rinominaTab') });
-    voci.push({ label: 'Elimina il preventivo', click: () => manda('eliminaTab') });
-  } else if (ctx.tipo === 'riga' && ctx.modo === 'righe') {
+    /* Sui preventivi: Taglia/Copia/Incolla lavorano sui preventivi selezionati,
+       interi; niente «Seleziona tutto», che qui non vorrebbe dire niente. */
+    const n = ctx.quante || 1;
+    voci.push({ label: n > 1 ? 'Duplica i ' + n + ' preventivi' : 'Duplica il preventivo', click: () => manda('duplicaTab') });
+    voci.push({ label: 'Rinomina…', enabled: n === 1, click: () => manda('rinominaTab') });
+    voci.push({ type: 'separator' });
+    voci.push({ label: 'Taglia', accelerator: 'CommandOrControl+X', registerAccelerator: false, click: () => manda('tagliaSchede') });
+    voci.push({ label: 'Copia', accelerator: 'CommandOrControl+C', registerAccelerator: false, click: () => manda('copiaSchede') });
+    voci.push({ label: 'Incolla', accelerator: 'CommandOrControl+V', registerAccelerator: false, enabled: !!ctx.copiato, click: () => manda('incollaSchede') });
+    voci.push({ type: 'separator' });
+    voci.push({ label: n > 1 ? 'Elimina i ' + n + ' preventivi' : 'Elimina il preventivo', click: () => manda('eliminaTab') });
+    Menu.buildFromTemplate(voci).popup({ window: win });
+    return true;
+  }
+  if (ctx.tipo === 'barra') {
+    /* barra delle schede fuori da un preventivo: si può solo incollare */
+    voci.push({ label: 'Incolla', accelerator: 'CommandOrControl+V', registerAccelerator: false, enabled: !!ctx.copiato, click: () => manda('incollaSchede') });
+    Menu.buildFromTemplate(voci).popup({ window: win });
+    return true;
+  }
+  if (ctx.tipo === 'riga' && ctx.modo === 'righe') {
     /* Sulle righe Taglia/Copia/Incolla sono quelli dell'app: lavorano sulle
        righe selezionate, intere. «Incolla» è spento se non c'è niente da
        incollare: lo sa la pagina, che tiene le righe copiate, e ce lo dice. */

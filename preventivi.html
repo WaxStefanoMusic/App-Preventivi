@@ -221,6 +221,9 @@ label.fld input,label.fld select,label.fld textarea{font-weight:400;color:var(--
 }
 .tab:hover{background:var(--plane);border-bottom-color:var(--grid)}
 .tab.active{color:var(--ink-1);border-bottom-color:var(--accent);font-weight:600;background:transparent}
+/* preventivi selezionati (Ctrl+clic, Maiusc+clic): lo stesso fondo delle righe scelte */
+.tab.selezionata{background:rgba(37,99,235,.10)}
+:root[data-theme="dark"] .tab.selezionata{background:rgba(96,140,255,.18)}
 .tab .ico{font-size:14px;flex:0 0 auto;opacity:.9}
 .tab .lbl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tab .cnt{
@@ -1713,8 +1716,14 @@ function renderTabs(){
       <span class="lbl">${esc(t.name)}</span>
       <span class="cnt">${righeDi(t.id).length}</span>`+
       (t.type!=='tot'?`<span class="x" data-act="close" title="Elimina il preventivo">×</span>`:'');
+    b.onmousedown=()=>{ ultimaArea='schede'; };
     b.onclick=e=>{
       if(e.target.dataset.act==='close'){ e.stopPropagation(); eliminaTab(t.id); return; }
+      /* Ctrl e Maiusc scelgono preventivi senza aprirli; il clic semplice apre */
+      if(t.type!=='tot' && (e.ctrlKey||e.metaKey||e.shiftKey)){
+        e.preventDefault(); selezionaScheda(t.id,e.ctrlKey||e.metaKey,e.shiftKey); return;
+      }
+      if(t.type!=='tot') selezionaScheda(t.id,false,false); else svuotaSelSchede();
       S.active=t.id; tocca(); render();
     };
     b.ondblclick=e=>{ if(t.type!=='tot'){ e.preventDefault(); rinominaTab(t.id); } };
@@ -1741,6 +1750,7 @@ function renderTabs(){
   add.innerHTML=`<button class="sm" id="addTab" title="Aggiunge un preventivo (una sezione) al preventivo complessivo">＋ Preventivo</button>`;
   bar.appendChild(add);
   $('#addTab').onclick=()=>nuovoTab();
+  mostraSelSchede();
 }
 
 function nuovoTab(nome){
@@ -1976,6 +1986,133 @@ function migraPromo(righe){
 }
 
 /** una copia della sezione con tutte le sue righe */
+/* ------------------------------------------------------------------
+   Selezione dei PREVENTIVI (le schede in alto — nel codice «sezioni»), come
+   in Windows. Clic: si apre e resta selezionato da solo. Ctrl+clic: si
+   aggiunge o si toglie dalla selezione, senza aprirlo. Maiusc+clic: tutti
+   quelli fra il preventivo di partenza e questo, in qualunque verso.
+
+   Taglia, Copia e Incolla del tasto destro sulle schede — e Ctrl+X, Ctrl+C,
+   Ctrl+V subito dopo aver cliccato sulle schede — lavorano sui preventivi
+   interi: voci, rate, nota. Incollati, finiscono in fondo, accanto a
+   «＋ Preventivo». Il complessivo non si seleziona: è la somma degli altri.
+   ------------------------------------------------------------------ */
+const selSchede=new Set();
+let ancoraScheda=null;
+let schedeCopiate=[];
+let ultimaArea='righe';      // dove si è cliccato per ultimo: decide a chi vanno Ctrl+C/X/V
+
+const idsSchede=()=>tabVoci().map(t=>t.id);
+function mostraSelSchede(){
+  for(const id of [...selSchede]) if(!tabById(id)) selSchede.delete(id);
+  $$('#tabbar .tab[data-id]').forEach(b=>b.classList.toggle('selezionata',selSchede.has(b.dataset.id)));
+}
+function selezionaScheda(id,ctrl,shift){
+  if(!tabById(id) || tabById(id).type==='tot') return;
+  const v=idsSchede();
+  if(shift && ancoraScheda && v.includes(ancoraScheda)){
+    let a=v.indexOf(ancoraScheda), b=v.indexOf(id);
+    if(a>b) [a,b]=[b,a];
+    if(!ctrl) selSchede.clear();
+    v.slice(a,b+1).forEach(x=>selSchede.add(x));
+  } else if(ctrl){
+    if(selSchede.has(id)) selSchede.delete(id); else selSchede.add(id);
+    ancoraScheda=id;
+  } else { selSchede.clear(); selSchede.add(id); ancoraScheda=id; }
+  mostraSelSchede();
+}
+function svuotaSelSchede(){ if(!selSchede.size) return; selSchede.clear(); mostraSelSchede(); }
+/** i preventivi su cui agire: tutta la selezione se quello premuto ne fa parte, altrimenti quello solo */
+function schedeBersaglio(id){
+  if(id && !selSchede.has(id)) return (tabById(id) && tabById(id).type!=='tot') ? [id] : [];
+  return idsSchede().filter(x=>selSchede.has(x));
+}
+const quantiPrev = (n,sing,plur) => n===1 ? 'Preventivo '+sing : n+' preventivi '+plur;
+
+/** tutto quello che serve per rifare un preventivo altrove */
+function fotografiaScheda(id){
+  const t=tabById(id);
+  return { name:t.name, icon:t.icon,
+    nota: (S.note && S.note[id]) ? Object.assign({},S.note[id]) : null,
+    righe: S.righe.filter(r=>r.tabId===id).map(({id:_v,tabId:_t,...d})=>d),
+    rate: rateSezione(id).map(x=>Object.assign({},x)) };
+}
+/** rifà un preventivo da una fotografia; «dove» è la posizione fra le schede */
+function rifaiScheda(f,nome,dove){
+  const t={id:'s'+uid(), type:'voci', name:nome, icon:f.icon||'📄'};
+  if(dove==null) S.tabs.push(t); else S.tabs.splice(dove,0,t);
+  f.righe.forEach(d=>S.righe.push(Object.assign({},d,{id:uid(),tabId:t.id})));
+  S.rate[t.id]=f.rate.map(x=>Object.assign({},x,{id:uid()}));
+  if(f.nota){ if(!S.note) S.note={}; S.note[t.id]=Object.assign({},f.nota); }
+  if(concordatoAttivo()) S.concordati[t.id]='';
+  return t;
+}
+function rimuoviSchede(ids){
+  const via=new Set(ids);
+  S.righe=S.righe.filter(r=>!via.has(r.tabId));
+  S.tabs=S.tabs.filter(t=>!via.has(t.id));
+  for(const id of ids){
+    if(S.rate) delete S.rate[id];
+    if(S.note) delete S.note[id];
+    if(concordatoAttivo()) delete S.concordati[id];
+  }
+  if(concordatoAttivo()) sommaConcordati();
+  if(!tabById(S.active)) S.active=(tabVoci()[0]||S.tabs[0]).id;
+  selSchede.clear();
+}
+
+function copiaSchede(id,zitto){
+  const ids=schedeBersaglio(id); if(!ids.length) return 0;
+  schedeCopiate=ids.map(fotografiaScheda);
+  if(!zitto) toast(quantiPrev(ids.length,'copiato','copiati'),'ok');
+  return ids.length;
+}
+function tagliaSchede(id){
+  const ids=schedeBersaglio(id);
+  const n=copiaSchede(id,true); if(!n) return;
+  rimuoviSchede(ids); tocca(); render();
+  toast(quantiPrev(n,'tagliato','tagliati')+': con Incolla li rimetti dove vuoi','ok');
+}
+/* Si incollano in fondo, accanto a «＋ Preventivo». Se c'è già un preventivo
+   con lo stesso nome, quello incollato si chiama «… (copia)», come in una
+   cartella di Windows. Restano selezionati, e si apre il primo. */
+function incollaSchede(){
+  if(!schedeCopiate.length) return;
+  const nomi=new Set(S.tabs.map(t=>t.name));
+  const nuove=schedeCopiate.map(f=>{
+    let nome=f.name; while(nomi.has(nome)) nome+=' (copia)';
+    nomi.add(nome);
+    return rifaiScheda(f,nome,null);
+  });
+  if(concordatoAttivo()) sommaConcordati();
+  selSchede.clear(); nuove.forEach(t=>selSchede.add(t.id)); ancoraScheda=nuove[0].id;
+  S.active=nuove[0].id; tocca(); render();
+  toast(quantiPrev(nuove.length,'incollato','incollati'),'ok');
+}
+/** Duplica: ogni preventivo selezionato si copia subito a destra di sé */
+function duplicaSchede(id){
+  const ids=schedeBersaglio(id); if(!ids.length) return;
+  if(ids.length===1) return duplicaTab(ids[0]);
+  const nuove=[];
+  for(const x of ids){
+    const f=fotografiaScheda(x);
+    nuove.push(rifaiScheda(f,f.name+' (copia)',S.tabs.findIndex(t=>t.id===x)+1));
+  }
+  if(concordatoAttivo()) sommaConcordati();
+  selSchede.clear(); nuove.forEach(t=>selSchede.add(t.id));
+  tocca(); render(); toast(quantiPrev(nuove.length,'duplicato','duplicati'),'ok');
+}
+function eliminaSchede(id){
+  const ids=schedeBersaglio(id); if(!ids.length) return;
+  if(ids.length===1) return eliminaTab(ids[0]);
+  const voci=S.righe.filter(r=>ids.includes(r.tabId)).length;
+  const fai=()=>{ rimuoviSchede(ids); tocca(); render(); toast(quantiPrev(ids.length,'eliminato','eliminati')); };
+  if(!voci) return fai();
+  modal('Eliminare i preventivi?',
+    `<p style="margin:0">Stai per eliminare <b>${ids.length} preventivi</b> e le loro <b>${voci}</b> righe.</p>`,
+    [{label:'Annulla'},{label:'Elimina',danger:true,fn:fai}]);
+}
+
 function duplicaTab(id){
   const t=tabById(id);
   if(!t||t.type==='tot') return;
@@ -4691,7 +4828,15 @@ function legaZoomWeb(){
    ============================================================================== */
 function contestoDaEvento(e){
   const tab=e.target.closest('.tab[data-id]');
-  if(tab&&tabById(tab.dataset.id)?.type!=='tot') return {tipo:'tab', id:tab.dataset.id};
+  if(tab&&tabById(tab.dataset.id)?.type!=='tot'){
+    const id=tab.dataset.id;
+    ultimaArea='schede';
+    if(!selSchede.has(id)) selezionaScheda(id,false,false);   // come in Windows
+    return {tipo:'tab', id, quante:schedeBersaglio(id).length, copiato:schedeCopiate.length>0};
+  }
+  /* sulla barra delle schede fuori da un preventivo (il complessivo, «＋
+     Preventivo», lo spazio vuoto) si può incollare */
+  if(e.target.closest('#tabbar')){ ultimaArea='schede'; return {tipo:'barra', copiato:schedeCopiate.length>0}; }
   const tr=e.target.closest('#corpo tr[data-id]');
   if(tr){
     const id=tr.dataset.id, r=rigaById(id);
@@ -4720,10 +4865,13 @@ function eseguiAzioneMenu(azione,id){
   if(azione==='copiaRighe')  copiaRighe(id);
   if(azione==='incollaRighe')incollaRighe(id);
   if(azione==='promo')       promoRighe(id);
-  if(azione==='duplicaTab')  duplicaTab(id);
+  if(azione==='duplicaTab')  duplicaSchede(id);
+  if(azione==='tagliaSchede')tagliaSchede(id);
+  if(azione==='copiaSchede') copiaSchede(id);
+  if(azione==='incollaSchede')incollaSchede();
   if(azione==='eliminaRiga') eliminaRighe(id);
   if(azione==='rinominaTab') rinominaTab(id);
-  if(azione==='eliminaTab')  eliminaTab(id);
+  if(azione==='eliminaTab')  eliminaSchede(id);
 }
 
 function legaMenuContestuale(){
@@ -4733,18 +4881,28 @@ function legaMenuContestuale(){
   document.addEventListener('keydown', e=>{
     if(!$('#overlay').hidden) return;
     const inCampo=document.activeElement && document.activeElement.matches?.(CAMPO);
-    if(e.key==='Escape' && selRighe.size){ svuotaSelezione(); return; }
+    if(e.key==='Escape' && (selRighe.size||selSchede.size)){ svuotaSelezione(); svuotaSelSchede(); return; }
     if(inCampo || !(e.ctrlKey||e.metaKey) || e.altKey) return;
     const k=e.key.toLowerCase();
+    if(ultimaArea==='schede'){
+      if(k==='c' && selSchede.size){ e.preventDefault(); copiaSchede(null); }
+      else if(k==='x' && selSchede.size){ e.preventDefault(); tagliaSchede(null); }
+      else if(k==='v' && schedeCopiate.length){ e.preventDefault(); incollaSchede(); }
+      return;
+    }
     if(k==='c' && selRighe.size){ e.preventDefault(); copiaRighe(null); }
     else if(k==='x' && selRighe.size){ e.preventDefault(); tagliaRighe(null); }
     else if(k==='v' && righeCopiate.length){ e.preventDefault(); incollaRighe(null); }
   });
   /* un clic fuori dalla tabella toglie la selezione, come in una cartella */
   document.addEventListener('mousedown', e=>{
-    if(e.button!==0 || !selRighe.size) return;
-    if(e.target.closest('#corpo, .menuctx, #overlay')) return;
-    svuotaSelezione();
+    if(e.button!==0) return;
+    if(e.target.closest('.menuctx, #overlay')) return;
+    if(e.target.closest('#corpo')) ultimaArea='righe';
+    if(selRighe.size && !e.target.closest('#corpo')) svuotaSelezione();
+    /* fuori dalla barra delle schede la selezione dei preventivi si riduce a
+       quello aperto: resta chiaro dove andrà un Ctrl+C */
+    if(selSchede.size>1 && !e.target.closest('#tabbar')) svuotaSelSchede();
   });
 
   document.addEventListener('contextmenu', e=>{
@@ -4783,8 +4941,11 @@ function collocaFluttuante(el,x,y){
 function menuDom(ctx,x,y){
   chiudiMenuDom();
   const voci = ctx.tipo==='vuoto' ? [['Incolla','incollaRighe']]
+    : ctx.tipo==='barra' ? (ctx.copiato?[['Incolla','incollaSchede']]:[])
     : ctx.tipo==='tab'
-    ? [['Duplica il preventivo','duplicaTab'],['Rinomina…','rinominaTab'],['Elimina il preventivo','eliminaTab']]
+    ? [['Duplica il preventivo','duplicaTab'],...(ctx.quante>1?[]:[['Rinomina…','rinominaTab']]),
+       ['Taglia','tagliaSchede'],['Copia','copiaSchede'],...(ctx.copiato?[['Incolla','incollaSchede']]:[]),
+       ['Elimina il preventivo','eliminaTab']]
     : [['Duplica','duplicaRiga'],
        [ctx.inPromo?'Togli Promo':'Promo','promo'],
        ...(ctx.modo==='righe'

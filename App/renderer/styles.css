@@ -215,6 +215,9 @@ label.fld input,label.fld select,label.fld textarea{font-weight:400;color:var(--
 }
 .tab:hover{background:var(--plane);border-bottom-color:var(--grid)}
 .tab.active{color:var(--ink-1);border-bottom-color:var(--accent);font-weight:600;background:transparent}
+/* preventivi selezionati (Ctrl+clic, Maiusc+clic): lo stesso fondo delle righe scelte */
+.tab.selezionata{background:rgba(37,99,235,.10)}
+:root[data-theme="dark"] .tab.selezionata{background:rgba(96,140,255,.18)}
 .tab .ico{font-size:14px;flex:0 0 auto;opacity:.9}
 .tab .lbl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tab .cnt{
