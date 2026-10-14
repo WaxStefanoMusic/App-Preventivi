@@ -956,17 +956,26 @@ ipcMain.handle('menu:contestuale', (e, ctx = {}) => {
     voci.push({ label: 'Duplica la sezione', click: () => manda('duplicaTab') });
     voci.push({ label: 'Rinomina…', click: () => manda('rinominaTab') });
     voci.push({ label: 'Elimina la sezione', click: () => manda('eliminaTab') });
+  } else if (ctx.tipo === 'riga' && ctx.modo === 'righe') {
+    /* Sulle righe Taglia/Copia/Incolla sono quelli dell'app: lavorano sulle
+       righe selezionate, intere. «Incolla» è spento se non c'è niente da
+       incollare: lo sa la pagina, che tiene le righe copiate, e ce lo dice. */
+    voci.push({ label: 'Taglia', accelerator: 'CommandOrControl+X', registerAccelerator: false, click: () => manda('tagliaRighe') });
+    voci.push({ label: 'Copia', accelerator: 'CommandOrControl+C', registerAccelerator: false, click: () => manda('copiaRighe') });
+    voci.push({ label: 'Incolla', accelerator: 'CommandOrControl+V', registerAccelerator: false, enabled: !!ctx.copiato, click: () => manda('incollaRighe') });
+    voci.push({ type: 'separator' });
+    voci.push({ label: 'Duplica Riga', click: () => manda('duplicaRiga') });
+    voci.push({ label: ctx.barrato ? 'Togli la barratura' : 'Promo', click: () => manda('promo') });
+    voci.push({ label: ctx.quante > 1 ? 'Elimina le ' + ctx.quante + ' righe' : 'Elimina la riga', click: () => manda('eliminaRiga') });
+    Menu.buildFromTemplate(voci).popup({ window: win });
+    return true;
   } else if (ctx.tipo === 'riga') {
     voci.push({ label: 'Duplica Riga', click: () => manda('duplicaRiga') });
-    voci.push({ label: 'Copia Riga', click: () => manda('copiaRiga') });
-    /* «Incolla Riga» compare solo se c'è qualcosa da incollare: se lo sa la
-       pagina, che tiene la riga copiata, e ce lo dice insieme al resto. */
-    if (ctx.copiato) voci.push({ label: 'Incolla Riga', click: () => manda('incollaRiga') });
     voci.push({ label: ctx.barrato ? 'Togli la barratura' : 'Promo', click: () => manda('promo') });
     voci.push({ label: 'Elimina la riga', click: () => manda('eliminaRiga') });
   }
 
-  // i comandi di Windows: sempre, così su un campo si può sempre incollare
+  // i comandi di Windows, sul testo: così su un campo si può sempre incollare
   if (voci.length) voci.push({ type: 'separator' });
   voci.push(
     { role: 'cut', label: 'Taglia' },

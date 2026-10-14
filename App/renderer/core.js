@@ -819,35 +819,105 @@ function eliminaRiga(id){
   S.righe.splice(i,1); tocca(); render();
 }
 
-/* La riga negli appunti dell'app. Non sono gli appunti di Windows: lì dentro
-   ci finisce del testo, mentre qui serve la riga intera — articolo,
-   descrizione, prezzo, quantità, IVA, promo — per rimetterla giù uguale anche
-   in un'altra sezione. Vive finché l'app è aperta. */
-let rigaCopiata=null;
+/* ------------------------------------------------------------------
+   Selezione delle righe, come in Esplora risorse.
 
-function copiaRiga(id){
-  const r=rigaById(id); if(!r) return;
-  const {id:_via, tabId:_pure, ...dati} = r;    // id e sezione se li prende chi incolla
-  rigaCopiata=dati;
-  toast('Riga copiata: «'+(r.articolo||r.descrizione||'senza nome')+'»','ok');
+   Clic su una riga (dove non si scrive: le cifre, i tasti a destra) la
+   seleziona da sola; Ctrl+clic ne aggiunge o ne toglie una; Maiusc+clic prende
+   tutte quelle fra la riga di partenza e questa, in qualunque verso — dalla
+   prima all'ultima o dall'ultima alla terza è lo stesso intervallo. Con Ctrl e
+   Maiusc il clic vale anche sopra una casella: lì si sta scegliendo righe, non
+   scrivendo. Un clic normale dentro una casella invece è scrivere, e la
+   selezione se ne va.
+
+   Taglia, Copia e Incolla del tasto destro (e Ctrl+X, Ctrl+C, Ctrl+V quando
+   non si sta scrivendo in una casella) lavorano sulle righe selezionate. Gli
+   appunti delle righe non sono quelli di Windows — lì ci va del testo, qui
+   serve la riga intera — e valgono anche da una sezione all'altra: la riga
+   incollata prende la sezione di dove atterra.
+   ------------------------------------------------------------------ */
+const selRighe=new Set();
+let ancoraSel=null;
+let righeCopiate=[];
+
+const CAMPO='input,textarea,select,[contenteditable="true"]';
+const idsVisibili=()=>$$('#corpo tr[data-id]').map(tr=>tr.dataset.id);
+
+/** riporta a schermo la selezione; quelle non più visibili (altra sezione) si lasciano andare */
+function mostraSelezione(){
+  const visibili=new Set(idsVisibili());
+  for(const id of [...selRighe]) if(!visibili.has(id)) selRighe.delete(id);
+  $$('#corpo tr[data-id]').forEach(tr=>tr.classList.toggle('selezionata',selRighe.has(tr.dataset.id)));
 }
+function selezionaDaClic(id,ctrl,shift){
+  if(shift && ancoraSel && idsVisibili().includes(ancoraSel)){
+    const v=idsVisibili();
+    let a=v.indexOf(ancoraSel), b=v.indexOf(id);
+    if(a>b) [a,b]=[b,a];
+    if(!ctrl) selRighe.clear();
+    v.slice(a,b+1).forEach(x=>selRighe.add(x));
+    // la riga di partenza resta quella: un altro Maiusc+clic riparte da lì
+  } else if(ctrl){
+    if(selRighe.has(id)) selRighe.delete(id); else selRighe.add(id);
+    ancoraSel=id;
+  } else {
+    selRighe.clear(); selRighe.add(id); ancoraSel=id;
+  }
+  mostraSelezione();
+}
+function svuotaSelezione(){ if(!selRighe.size) return; selRighe.clear(); mostraSelezione(); }
 
-/* Incolla sotto alla riga su cui si è premuto, dentro la SUA sezione: è lì che
-   si sta guardando. Da una sezione all'altra funziona uguale — la riga non si
-   porta dietro la sezione di provenienza, la prende da dove atterra. */
-function incollaRiga(id){
-  if(!rigaCopiata) return;
-  const rif=rigaById(id);
+/** le righe su cui agire: tutta la selezione se la riga premuta ne fa parte, altrimenti quella sola */
+function righeBersaglio(id){
+  if(id && !selRighe.has(id)) return [id];
+  return idsVisibili().filter(x=>selRighe.has(x));        // nell'ordine in cui si vedono
+}
+const quanteRighe = n => n===1 ? 'Riga' : n+' righe';
+
+function copiaRighe(id,zitto){
+  const righe=righeBersaglio(id).map(rigaById).filter(Boolean);
+  if(!righe.length) return 0;
+  righeCopiate=righe.map(({id:_via,tabId:_pure,...dati})=>dati);   // id e sezione li prende chi incolla
+  if(!zitto) toast(quanteRighe(righe.length)+(righe.length===1?' copiata':' copiate'),'ok');
+  return righe.length;
+}
+function tagliaRighe(id){
+  const ids=new Set(righeBersaglio(id));
+  const n=copiaRighe(id,true); if(!n) return;
+  S.righe=S.righe.filter(r=>!ids.has(r.id));
+  selRighe.clear(); tocca(); render();
+  toast(quanteRighe(n)+(n===1?' tagliata':' tagliate'),'ok');
+}
+/* Incolla sotto all'ultima riga selezionata (o a quella premuta), dentro la SUA
+   sezione; senza nessuna riga di riferimento, in fondo alla sezione aperta. Le
+   righe incollate restano selezionate, così si vedono subito e si possono
+   spostare o ricopiare. */
+function incollaRighe(id){
+  if(!righeCopiate.length) return;
+  const ids=righeBersaglio(id);
+  const rif=rigaById(ids[ids.length-1]);
   const tabId = rif ? rif.tabId : (S.active!==ID_TOT ? S.active : (tabVoci()[0]||{}).id);
-  if(!tabId) return toast('Non c\'è una sezione dove incollarla','err');
-  const nuova=Object.assign({},rigaCopiata,{id:uid(),tabId});
-  const dove = rif ? S.righe.indexOf(rif)+1 : S.righe.length;
-  S.righe.splice(dove,0,nuova);
+  if(!tabId) return toast('Non c\'è una sezione dove incollarle','err');
+  let dove;
+  if(rif) dove=S.righe.indexOf(rif)+1;
+  else{
+    const ultima=S.righe.map(r=>r.tabId).lastIndexOf(tabId);
+    dove = ultima<0 ? S.righe.length : ultima+1;
+  }
+  const nuove=righeCopiate.map(d=>Object.assign({},d,{id:uid(),tabId}));
+  S.righe.splice(dove,0,...nuove);
+  selRighe.clear(); nuove.forEach(r=>selRighe.add(r.id)); ancoraSel=nuove[0].id;
   tocca(); render();
-  $(`#corpo tr[data-id="${nuova.id}"]`)?.scrollIntoView({block:'nearest'});
+  $(`#corpo tr[data-id="${nuove[0].id}"]`)?.scrollIntoView({block:'nearest'});
   const sez=tabById(tabId);
-  toast('Riga incollata'+(sez&&S.active!==tabId?' in «'+sez.name+'»':''),'ok');
-  return nuova;
+  toast(quanteRighe(nuove.length)+(nuove.length===1?' incollata':' incollate')
+        +(sez&&S.active!==tabId?' in «'+sez.name+'»':''),'ok');
+}
+function eliminaRighe(id){
+  const ids=new Set(righeBersaglio(id));
+  if(!ids.size) return;
+  S.righe=S.righe.filter(r=>!ids.has(r.id));
+  selRighe.clear(); tocca(); render();
 }
 
 /** una copia della riga, subito sotto l'originale */
@@ -1524,6 +1594,27 @@ function legaVista(){
       $$('#corpo tr').forEach(tr=>tr.classList.remove('sitrascina','sopra','sotto'));
     });
   }
+
+  /* La selezione delle righe (vedi «selRighe»). I tasti delle righe fanno il
+     loro lavoro e basta; Ctrl e Maiusc scelgono righe anche sopra una casella,
+     e allora il cursore non ci deve entrare. */
+  corpo.addEventListener('mousedown', e=>{
+    if(e.button!==0) return;
+    const tr=e.target.closest('tr[data-id]'); if(!tr) return;
+    if(e.target.closest('button')) return;
+    const ctrl=e.ctrlKey||e.metaKey;
+    if(ctrl||e.shiftKey){
+      e.preventDefault();
+      document.activeElement?.blur?.();
+      selezionaDaClic(tr.dataset.id,ctrl,e.shiftKey);
+    } else if(e.target.closest(CAMPO)){
+      svuotaSelezione(); ancoraSel=tr.dataset.id;          // si scrive: la selezione se ne va
+    } else {
+      document.activeElement?.blur?.();                    // così Ctrl+C va alle righe
+      selezionaDaClic(tr.dataset.id,false,false);
+    }
+  });
+  mostraSelezione();
 
   /* Ctrl+Invio aggiunge una riga: le mani restano sulla tastiera. */
   corpo.addEventListener('keydown', e=>{
@@ -3557,24 +3648,53 @@ function contestoDaEvento(e){
   if(tab&&tabById(tab.dataset.id)?.type!=='tot') return {tipo:'tab', id:tab.dataset.id};
   const tr=e.target.closest('#corpo tr[data-id]');
   if(tr){
-    const r=rigaById(tr.dataset.id);
-    return {tipo:'riga', id:tr.dataset.id, barrato:!!(r&&r.barrato), copiato:!!rigaCopiata};
+    const id=tr.dataset.id, r=rigaById(id);
+    /* Righe o testo? Se la riga premuta è fra quelle selezionate, o si è
+       premuto fuori dalle caselle, Taglia/Copia/Incolla lavorano sulle righe —
+       e una riga non selezionata diventa la selezione, come in Windows. Dentro
+       una casella, senza righe selezionate, lavorano sul testo. */
+    const inCampo=!!e.target.closest(CAMPO);
+    const righe = selRighe.has(id) || !inCampo;
+    if(righe && !selRighe.has(id)) selezionaDaClic(id,false,false);
+    return {tipo:'riga', id, barrato:!!(r&&r.barrato), modo: righe?'righe':'testo',
+            copiato: righeCopiate.length>0, quante: righe?righeBersaglio(id).length:1};
   }
   return {tipo:'testo'};
 }
 
 function eseguiAzioneMenu(azione,id){
   if(azione==='duplicaRiga') duplicaRiga(id);
-  if(azione==='copiaRiga')   copiaRiga(id);
-  if(azione==='incollaRiga') incollaRiga(id);
+  if(azione==='tagliaRighe') tagliaRighe(id);
+  if(azione==='copiaRighe')  copiaRighe(id);
+  if(azione==='incollaRighe')incollaRighe(id);
   if(azione==='promo')       promoRiga(id);
   if(azione==='duplicaTab')  duplicaTab(id);
-  if(azione==='eliminaRiga') eliminaRiga(id);
+  if(azione==='eliminaRiga') eliminaRighe(id);
   if(azione==='rinominaTab') rinominaTab(id);
   if(azione==='eliminaTab')  eliminaTab(id);
 }
 
 function legaMenuContestuale(){
+  /* Ctrl+X, Ctrl+C, Ctrl+V sulle righe selezionate — ma solo se non si sta
+     scrivendo in una casella: lì restano quelli del testo. Esc toglie la
+     selezione. */
+  document.addEventListener('keydown', e=>{
+    if(!$('#overlay').hidden) return;
+    const inCampo=document.activeElement && document.activeElement.matches?.(CAMPO);
+    if(e.key==='Escape' && selRighe.size){ svuotaSelezione(); return; }
+    if(inCampo || !(e.ctrlKey||e.metaKey) || e.altKey) return;
+    const k=e.key.toLowerCase();
+    if(k==='c' && selRighe.size){ e.preventDefault(); copiaRighe(null); }
+    else if(k==='x' && selRighe.size){ e.preventDefault(); tagliaRighe(null); }
+    else if(k==='v' && righeCopiate.length){ e.preventDefault(); incollaRighe(null); }
+  });
+  /* un clic fuori dalla tabella toglie la selezione, come in una cartella */
+  document.addEventListener('mousedown', e=>{
+    if(e.button!==0 || !selRighe.size) return;
+    if(e.target.closest('#corpo, .menuctx, #overlay')) return;
+    svuotaSelezione();
+  });
+
   document.addEventListener('contextmenu', e=>{
     if(!$('#overlay').hidden && !e.target.closest('#modal')) return;
     const ctx=contestoDaEvento(e);
@@ -3611,9 +3731,12 @@ function menuDom(ctx,x,y){
   chiudiMenuDom();
   const voci = ctx.tipo==='tab'
     ? [['Duplica la sezione','duplicaTab'],['Rinomina…','rinominaTab'],['Elimina','eliminaTab']]
-    : [['Duplica Riga','duplicaRiga'],['Copia Riga','copiaRiga'],
-       ...(rigaCopiata?[['Incolla Riga','incollaRiga']]:[]),
-       [ctx.barrato?'Togli la barratura':'Promo','promo'],['Elimina','eliminaRiga']];
+    : [...(ctx.modo==='righe'
+            ? [['Taglia','tagliaRighe'],['Copia','copiaRighe'],...(ctx.copiato?[['Incolla','incollaRighe']]:[])]
+            : []),
+       ['Duplica Riga','duplicaRiga'],
+       [ctx.barrato?'Togli la barratura':'Promo','promo'],
+       [ctx.quante>1?'Elimina le righe':'Elimina','eliminaRiga']];
   const m=document.createElement('div');
   m.className='menuctx';
   m.innerHTML=voci.map(([t,a])=>`<button data-a="${a}">${esc(t)}</button>`).join('');

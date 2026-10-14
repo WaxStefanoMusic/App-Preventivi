@@ -374,6 +374,11 @@ tr:hover td.az button:disabled{opacity:.18}
 /* Trascinamento: la riga che si sta portando in giro sbiadisce, e quella su cui
    si sta per posarla mostra da che parte finirà. */
 tr.sitrascina{opacity:.45}
+/* Righe selezionate (Ctrl+clic, Maiusc+clic): un fondo tenue e una barra sul
+   bordo sinistro, come le righe scelte in una cartella di Windows. */
+#corpo tr.selezionata td{background:rgba(37,99,235,.10)}
+#corpo tr.selezionata td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
+:root[data-theme="dark"] #corpo tr.selezionata td{background:rgba(96,140,255,.18)}
 tr.sopra td{box-shadow:inset 0 2px 0 var(--accent)}
 tr.sotto td{box-shadow:inset 0 -2px 0 var(--accent)}
 /* Colonna TAB del preventivo complessivo: promemoria della sezione di

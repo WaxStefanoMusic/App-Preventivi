@@ -171,14 +171,22 @@ salvati, con data e cartella. Quelli spostati o cancellati spariscono da soli
 dall'elenco.
 
 **Tasto destro.** Sui campi in cui si scrive compaiono i comandi di Windows
-(Taglia, Copia, Incolla). Su un **TAB** si aggiungono *Duplica la sezione*,
-*Rinomina*, *Elimina*. Su una **riga** si aggiungono *Duplica Riga*, *Copia Riga*,
-*Promo* e *Elimina*.
+(Taglia, Copia, Incolla) per il testo. Su un **TAB** si aggiungono *Duplica la
+sezione*, *Rinomina*, *Elimina*. Su una **riga** ci sono *Duplica Riga*, *Promo*
+ed *Elimina*.
 
-Copiata una riga compare anche *Incolla Riga*, che la rimette sotto alla riga su
-cui hai premuto — nella sezione di quella riga, quindi anche **da una sezione
-all'altra**. La riga copiata resta negli appunti dell'app finché è aperta, e si
-può incollare quante volte serve.
+**Selezionare le righe**, come in una cartella di Windows: un clic sulla riga
+(dove non si scrive: le cifre, i tasti a destra) la seleziona; **Ctrl+clic**
+ne aggiunge o ne toglie una; **Maiusc+clic** prende tutte quelle fra la riga di
+partenza e questa, in qualunque verso. Con Ctrl o Maiusc il clic vale anche
+sopra una casella. Un clic normale dentro una casella è scrivere, e la
+selezione se ne va; anche Esc o un clic fuori dalla tabella la tolgono.
+
+Sulle righe selezionate **Taglia, Copia e Incolla** del tasto destro — o
+Ctrl+X, Ctrl+C, Ctrl+V quando il cursore non è in una casella — lavorano sulle
+righe intere, anche da una sezione all'altra: si incollano sotto l'ultima riga
+selezionata, nella sua sezione, e restano selezionate. *Elimina* toglie tutte
+quelle selezionate.
 
 **Promo.** Sbarra il prezzo che c'era e apre sotto una riga gemella dove scrivere
 quello nuovo. Il prezzo vecchio resta a vista — sul foglio e in Excel — ma
