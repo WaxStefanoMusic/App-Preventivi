@@ -950,10 +950,19 @@ ipcMain.handle('ui:zoomSet', (_e, { uiZoom: z, mode } = {}) => {
    ------------------------------------------------------------------------- */
 /* Le voci della riga, sempre in fondo al menu. Valgono per tutte le righe
    selezionate: si duplicano, vanno in promo o si eliminano tutte insieme. */
-function vociRiga(ctx, manda) {
+/* Le voci della riga valgono per tutte le righe selezionate. L'ordine nel
+   menu: Duplica e Promo in cima, poi Taglia/Copia/Incolla, ed Elimina in fondo
+   — staccato dagli altri, che è il posto di chi cancella. */
+function vociRigaSopra(ctx, manda) {
   return [
     { label: 'Duplica', click: () => manda('duplicaRiga') },
     { label: ctx.inPromo ? 'Togli Promo' : 'Promo', click: () => manda('promo') },
+    { type: 'separator' },
+  ];
+}
+function vociRigaSotto(ctx, manda) {
+  return [
+    { type: 'separator' },
     { label: 'Elimina', click: () => manda('eliminaRiga') },
   ];
 }
@@ -976,22 +985,22 @@ ipcMain.handle('menu:contestuale', (e, ctx = {}) => {
     /* Sulle righe Taglia/Copia/Incolla sono quelli dell'app: lavorano sulle
        righe selezionate, intere. «Incolla» è spento se non c'è niente da
        incollare: lo sa la pagina, che tiene le righe copiate, e ce lo dice. */
+    voci.push(...vociRigaSopra(ctx, manda));
     voci.push({ label: 'Taglia', accelerator: 'CommandOrControl+X', registerAccelerator: false, click: () => manda('tagliaRighe') });
     voci.push({ label: 'Copia', accelerator: 'CommandOrControl+C', registerAccelerator: false, click: () => manda('copiaRighe') });
     voci.push({ label: 'Incolla', accelerator: 'CommandOrControl+V', registerAccelerator: false, enabled: !!ctx.copiato, click: () => manda('incollaRighe') });
-    voci.push({ type: 'separator' }, ...vociRiga(ctx, manda));
+    voci.push(...vociRigaSotto(ctx, manda));
     Menu.buildFromTemplate(voci).popup({ window: win });
     return true;
   } else if (ctx.tipo === 'riga') {
-    /* dentro una casella: prima i comandi del testo, in fondo quelli della riga */
+    /* dentro una casella: in mezzo i comandi del testo, sopra e sotto quelli della riga */
     voci.push(
+      ...vociRigaSopra(ctx, manda),
       { role: 'cut', label: 'Taglia' },
       { role: 'copy', label: 'Copia' },
       { role: 'paste', label: 'Incolla' },
-      { type: 'separator' },
       { role: 'selectAll', label: 'Seleziona tutto' },
-      { type: 'separator' },
-      ...vociRiga(ctx, manda),
+      ...vociRigaSotto(ctx, manda),
     );
     Menu.buildFromTemplate(voci).popup({ window: win });
     return true;

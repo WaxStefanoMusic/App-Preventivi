@@ -4785,11 +4785,11 @@ function menuDom(ctx,x,y){
   const voci = ctx.tipo==='vuoto' ? [['Incolla','incollaRighe']]
     : ctx.tipo==='tab'
     ? [['Duplica il preventivo','duplicaTab'],['Rinomina…','rinominaTab'],['Elimina il preventivo','eliminaTab']]
-    : [...(ctx.modo==='righe'
+    : [['Duplica','duplicaRiga'],
+       [ctx.inPromo?'Togli Promo':'Promo','promo'],
+       ...(ctx.modo==='righe'
             ? [['Taglia','tagliaRighe'],['Copia','copiaRighe'],...(ctx.copiato?[['Incolla','incollaRighe']]:[])]
             : []),
-       ['Duplica','duplicaRiga'],
-       [ctx.inPromo?'Togli Promo':'Promo','promo'],
        ['Elimina','eliminaRiga']];
   const m=document.createElement('div');
   m.className='menuctx';
