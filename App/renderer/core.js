@@ -739,7 +739,7 @@ function renderTabs(){
     b.innerHTML=`<span class="ico">${esc(t.icon||'📄')}</span>
       <span class="lbl">${esc(t.name)}</span>
       <span class="cnt">${righeDi(t.id).length}</span>`+
-      (t.type!=='tot'?`<span class="x" data-act="close" title="Elimina la sezione">×</span>`:'');
+      (t.type!=='tot'?`<span class="x" data-act="close" title="Elimina il preventivo">×</span>`:'');
     b.onclick=e=>{
       if(e.target.dataset.act==='close'){ e.stopPropagation(); eliminaTab(t.id); return; }
       S.active=t.id; tocca(); render();
@@ -781,7 +781,7 @@ function nuovoTab(nome){
 }
 function rinominaTab(id){
   const t=tabById(id); if(!t) return;
-  modal('Rinomina la sezione',`
+  modal('Rinomina il preventivo',`
     <label class="fld">Nome<input id="mNome" value="${esc(t.name)}"></label>
     <label class="fld" style="margin-top:10px">Icona<input id="mIco" value="${esc(t.icon||'')}" maxlength="4" style="width:90px"></label>
   `,[{label:'Annulla'},{label:'Salva',primary:true,fn:()=>{
@@ -800,10 +800,10 @@ function eliminaTab(id){
     // sparita la sezione, sparisce anche la sua quota: il complessivo si rifà
     if(concordatoAttivo()){ delete S.concordati[id]; sommaConcordati(); }
     if(S.active===id) S.active=(tabVoci()[0]||S.tabs[0]).id;
-    tocca(); render(); toast('Sezione eliminata');
+    tocca(); render(); toast('Preventivo eliminato');
   };
   if(!n) return fai();
-  modal('Eliminare la sezione?',
+  modal('Eliminare il preventivo?',
     `<p style="margin:0">Stai per eliminare <b>${esc(t.name)}</b> e le sue <b>${n}</b> righe.</p>`,
     [{label:'Annulla'},{label:'Elimina',danger:true,fn:fai}]);
 }
@@ -1014,7 +1014,7 @@ function duplicaTab(id){
   S.rate[copia.id]=rateSezione(id).map(x=>Object.assign({},x,{id:uid()}));
   if(concordatoAttivo()){ S.concordati[copia.id]=''; sommaConcordati(); }
   S.active=copia.id; tocca(); render();
-  toast('Sezione duplicata','ok');
+  toast('Preventivo duplicato','ok');
 }
 
 /* ==============================================================================
@@ -3812,7 +3812,7 @@ function menuDom(ctx,x,y){
   chiudiMenuDom();
   const voci = ctx.tipo==='vuoto' ? [['Incolla','incollaRighe']]
     : ctx.tipo==='tab'
-    ? [['Duplica la sezione','duplicaTab'],['Rinomina…','rinominaTab'],['Elimina','eliminaTab']]
+    ? [['Duplica il preventivo','duplicaTab'],['Rinomina…','rinominaTab'],['Elimina il preventivo','eliminaTab']]
     : [...(ctx.modo==='righe'
             ? [['Taglia','tagliaRighe'],['Copia','copiaRighe'],...(ctx.copiato?[['Incolla','incollaRighe']]:[])]
             : []),

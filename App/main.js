@@ -969,9 +969,9 @@ ipcMain.handle('menu:contestuale', (e, ctx = {}) => {
     return true;
   }
   if (ctx.tipo === 'tab') {
-    voci.push({ label: 'Duplica la sezione', click: () => manda('duplicaTab') });
+    voci.push({ label: 'Duplica il preventivo', click: () => manda('duplicaTab') });
     voci.push({ label: 'Rinomina…', click: () => manda('rinominaTab') });
-    voci.push({ label: 'Elimina la sezione', click: () => manda('eliminaTab') });
+    voci.push({ label: 'Elimina il preventivo', click: () => manda('eliminaTab') });
   } else if (ctx.tipo === 'riga' && ctx.modo === 'righe') {
     /* Sulle righe Taglia/Copia/Incolla sono quelli dell'app: lavorano sulle
        righe selezionate, intere. «Incolla» è spento se non c'è niente da
