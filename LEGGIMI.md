@@ -172,7 +172,7 @@ dall'elenco.
 
 **Tasto destro.** Sui campi in cui si scrive compaiono i comandi di Windows
 (Taglia, Copia, Incolla) per il testo. Su un **TAB** si aggiungono *Duplica la
-sezione*, *Rinomina*, *Elimina*. Su una **riga** ci sono *Duplica Riga*, *Promo*
+sezione*, *Rinomina*, *Elimina*. Su una **riga** ci sono *Duplica*, *Promo*
 ed *Elimina*.
 
 **Selezionare le righe**, come in una cartella di Windows: un clic sulla riga
@@ -185,8 +185,10 @@ selezione se ne va; anche Esc o un clic fuori dalla tabella la tolgono.
 Sulle righe selezionate **Taglia, Copia e Incolla** del tasto destro — o
 Ctrl+X, Ctrl+C, Ctrl+V quando il cursore non è in una casella — lavorano sulle
 righe intere, anche da una sezione all'altra: si incollano sotto l'ultima riga
-selezionata, nella sua sezione, e restano selezionate. *Elimina* toglie tutte
-quelle selezionate.
+selezionata, nella sua sezione, e restano selezionate. *Duplica*, *Promo* ed
+*Elimina*, in fondo al menu, valgono per tutte le righe selezionate. In una sezione
+vuota il tasto destro sulla tabella offre *Incolla*, per portarci righe copiate
+altrove. La promo si toglie anche con la × accanto al suo prezzo.
 
 **Promo.** Sbarra il prezzo che c'era e apre sotto una riga gemella dove scrivere
 quello nuovo. Il prezzo vecchio resta a vista — sul foglio e in Excel — ma

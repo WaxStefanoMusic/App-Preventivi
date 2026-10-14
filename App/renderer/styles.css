@@ -432,6 +432,15 @@ tr.conpromo input.pro{
   border-color:var(--border);background:var(--surface-1);
 }
 tr.conpromo input.pro::placeholder{color:var(--ink-3);font-weight:400;font-style:italic}
+/* La x che toglie la promo sta sulla riga del prezzo promo, accanto a lui:
+   è quella riga che se ne va. */
+.prorig{display:flex;align-items:center;gap:2px}
+.prorig input.pro{flex:1;min-width:0}
+button.viapromo{
+  flex:0 0 auto;border:0;background:transparent;color:var(--ink-3);
+  padding:0 3px;font-size:16px;line-height:1;
+}
+button.viapromo:hover{color:var(--critical);background:transparent}
 tr.conpromo td.calc .pro{color:var(--good-text)}
 
 /* menu del tasto destro, versione per il browser */

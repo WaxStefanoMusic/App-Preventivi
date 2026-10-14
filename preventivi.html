@@ -438,6 +438,15 @@ tr.conpromo input.pro{
   border-color:var(--border);background:var(--surface-1);
 }
 tr.conpromo input.pro::placeholder{color:var(--ink-3);font-weight:400;font-style:italic}
+/* La x che toglie la promo sta sulla riga del prezzo promo, accanto a lui:
+   è quella riga che se ne va. */
+.prorig{display:flex;align-items:center;gap:2px}
+.prorig input.pro{flex:1;min-width:0}
+button.viapromo{
+  flex:0 0 auto;border:0;background:transparent;color:var(--ink-3);
+  padding:0 3px;font-size:16px;line-height:1;
+}
+button.viapromo:hover{color:var(--critical);background:transparent}
 tr.conpromo td.calc .pro{color:var(--good-text)}
 
 /* menu del tasto destro, versione per il browser */
@@ -1876,6 +1885,35 @@ function incollaRighe(id){
   toast(quanteRighe(nuove.length)+(nuove.length===1?' incollata':' incollate')
         +(sez&&S.active!==tabId?' in «'+sez.name+'»':''),'ok');
 }
+/* Duplica: ogni riga si copia subito sotto a sé, e le copie restano
+   selezionate — si vedono, e si possono spostare o ritoccare insieme. */
+function duplicaRighe(id){
+  const ids=righeBersaglio(id); if(!ids.length) return;
+  const copie=[];
+  for(const x of ids){
+    const i=S.righe.findIndex(r=>r.id===x); if(i<0) continue;
+    const c=Object.assign({},S.righe[i],{id:uid()});
+    S.righe.splice(i+1,0,c); copie.push(c);
+  }
+  selRighe.clear(); copie.forEach(c=>selRighe.add(c.id)); ancoraSel=copie[0]?.id||null;
+  tocca(); render();
+  $(`#corpo tr[data-id="${copie[0]?.id}"]`)?.scrollIntoView({block:'nearest'});
+}
+/* Promo su più righe: se sono già tutte in promo la si toglie a tutte,
+   altrimenti la si mette a quelle che non ce l'hanno. Con una riga sola è il
+   comportamento di sempre — e il cursore va nel prezzo promo da scrivere. */
+const tutteInPromo = ids => ids.length>0 && ids.every(x=>{ const r=rigaById(x); return r && r.promo!=null; });
+function promoRighe(id){
+  const ids=righeBersaglio(id); if(!ids.length) return;
+  if(ids.length===1) return promoRiga(ids[0]);
+  const togli=tutteInPromo(ids);
+  for(const x of ids){
+    const r=rigaById(x); if(!r) continue;
+    if(togli) delete r.promo; else if(r.promo==null) r.promo='';
+  }
+  tocca(); render();
+}
+
 function eliminaRighe(id){
   const ids=new Set(righeBersaglio(id));
   if(!ids.size) return;
@@ -2060,8 +2098,9 @@ function rigaHTML(r,complessivo,indice,quante){
     </td>
     <td>
       <input class="cell-in num orig" data-k="prezzo" value="${r.prezzo===''?'':fmtNum(numIT(r.prezzo))}" placeholder="0,00" inputmode="decimal">
-      ${promo?`<input class="cell-in num pro" data-k="promo" value="${String(r.promo).trim()===''?'':fmtNum(numIT(r.promo))}"
-        placeholder="promo" inputmode="decimal" title="Prezzo promozionale: è questo che conta nei totali">`:''}
+      ${promo?`<span class="prorig"><input class="cell-in num pro" data-k="promo" value="${String(r.promo).trim()===''?'':fmtNum(numIT(r.promo))}"
+        placeholder="promo" inputmode="decimal" title="Prezzo promozionale: è questo che conta nei totali"><button
+        class="viapromo" data-act="viapromo" title="Togli la promo: la riga torna al suo prezzo">×</button></span>`:''}
     </td>
     <td class="cel-mezzo"><input class="cell-in num" data-k="qta" value="${r.qta===''?'':fmtQty(numIT(r.qta))}" placeholder="1" inputmode="decimal"></td>
     <td class="num calc" data-c="imponibile">${due(fmtNum(c.originale.imponibile), fmtNum(c.imponibile))}</td>
@@ -2505,6 +2544,7 @@ function legaVista(){
     const id=tr.dataset.id;
     if(b.dataset.act==='desc') dialogoDescrizione(id);
     if(b.dataset.act==='del')  eliminaRiga(id);
+    if(b.dataset.act==='viapromo') promoRiga(id);     // in promo: la toglie
     if(b.dataset.act==='su')   spostaRiga(id,-1);
     if(b.dataset.act==='giu')  spostaRiga(id,+1);
     if(b.dataset.act==='vaitab'){
@@ -4619,18 +4659,24 @@ function contestoDaEvento(e){
     const inCampo=!!e.target.closest(CAMPO);
     const righe = selRighe.has(id) || !inCampo;
     if(righe && !selRighe.has(id)) selezionaDaClic(id,false,false);
-    return {tipo:'riga', id, barrato:!!(r&&r.barrato), modo: righe?'righe':'testo',
-            copiato: righeCopiate.length>0, quante: righe?righeBersaglio(id).length:1};
+    const bersaglio = righe ? righeBersaglio(id) : [id];
+    return {tipo:'riga', id, modo: righe?'righe':'testo', inPromo: tutteInPromo(bersaglio),
+            copiato: righeCopiate.length>0, quante: bersaglio.length};
   }
+  /* Una sezione senza righe non ha niente su cui premere: il tasto destro sulla
+     tabella vuota (o sotto le righe) offre «Incolla», e le righe copiate da
+     un'altra sezione finiscono qui. */
+  if(e.target.closest('.tablewrap') && !e.target.closest(CAMPO) && righeCopiate.length && S.active!==ID_TOT)
+    return {tipo:'vuoto'};
   return {tipo:'testo'};
 }
 
 function eseguiAzioneMenu(azione,id){
-  if(azione==='duplicaRiga') duplicaRiga(id);
+  if(azione==='duplicaRiga') duplicaRighe(id);
   if(azione==='tagliaRighe') tagliaRighe(id);
   if(azione==='copiaRighe')  copiaRighe(id);
   if(azione==='incollaRighe')incollaRighe(id);
-  if(azione==='promo')       promoRiga(id);
+  if(azione==='promo')       promoRighe(id);
   if(azione==='duplicaTab')  duplicaTab(id);
   if(azione==='eliminaRiga') eliminaRighe(id);
   if(azione==='rinominaTab') rinominaTab(id);
@@ -4670,6 +4716,7 @@ function legaMenuContestuale(){
     // aggiungono i nostri solo dove servono
     if(ctx.tipo==='testo') return;
     e.preventDefault();
+    if(ctx.tipo==='vuoto') return menuDom({tipo:'vuoto'},e.clientX,e.clientY);
     menuDom(ctx,e.clientX,e.clientY);
   });
 }
@@ -4692,14 +4739,15 @@ function collocaFluttuante(el,x,y){
 /** menu dell'app, per la versione che gira nel browser */
 function menuDom(ctx,x,y){
   chiudiMenuDom();
-  const voci = ctx.tipo==='tab'
+  const voci = ctx.tipo==='vuoto' ? [['Incolla','incollaRighe']]
+    : ctx.tipo==='tab'
     ? [['Duplica la sezione','duplicaTab'],['Rinomina…','rinominaTab'],['Elimina','eliminaTab']]
     : [...(ctx.modo==='righe'
             ? [['Taglia','tagliaRighe'],['Copia','copiaRighe'],...(ctx.copiato?[['Incolla','incollaRighe']]:[])]
             : []),
-       ['Duplica Riga','duplicaRiga'],
-       [ctx.barrato?'Togli la barratura':'Promo','promo'],
-       [ctx.quante>1?'Elimina le righe':'Elimina','eliminaRiga']];
+       ['Duplica','duplicaRiga'],
+       [ctx.inPromo?'Togli Promo':'Promo','promo'],
+       ['Elimina','eliminaRiga']];
   const m=document.createElement('div');
   m.className='menuctx';
   m.innerHTML=voci.map(([t,a])=>`<button data-a="${a}">${esc(t)}</button>`).join('');

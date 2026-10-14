@@ -948,10 +948,26 @@ ipcMain.handle('ui:zoomSet', (_e, { uiZoom: z, mode } = {}) => {
    incollare da sola), quelli dell'app li aggiunge la pagina dicendo su che
    cosa si è premuto.
    ------------------------------------------------------------------------- */
+/* Le voci della riga, sempre in fondo al menu. Valgono per tutte le righe
+   selezionate: si duplicano, vanno in promo o si eliminano tutte insieme. */
+function vociRiga(ctx, manda) {
+  return [
+    { label: 'Duplica', click: () => manda('duplicaRiga') },
+    { label: ctx.inPromo ? 'Togli Promo' : 'Promo', click: () => manda('promo') },
+    { label: 'Elimina', click: () => manda('eliminaRiga') },
+  ];
+}
+
 ipcMain.handle('menu:contestuale', (e, ctx = {}) => {
   const manda = (azione) => win && !win.isDestroyed() && win.webContents.send('menu:azione', { azione, id: ctx.id });
   const voci = [];
 
+  if (ctx.tipo === 'vuoto') {
+    /* tabella vuota con delle righe negli appunti: si possono incollare qui */
+    voci.push({ label: 'Incolla', accelerator: 'CommandOrControl+V', registerAccelerator: false, click: () => manda('incollaRighe') });
+    Menu.buildFromTemplate(voci).popup({ window: win });
+    return true;
+  }
   if (ctx.tipo === 'tab') {
     voci.push({ label: 'Duplica la sezione', click: () => manda('duplicaTab') });
     voci.push({ label: 'Rinomina…', click: () => manda('rinominaTab') });
@@ -963,16 +979,22 @@ ipcMain.handle('menu:contestuale', (e, ctx = {}) => {
     voci.push({ label: 'Taglia', accelerator: 'CommandOrControl+X', registerAccelerator: false, click: () => manda('tagliaRighe') });
     voci.push({ label: 'Copia', accelerator: 'CommandOrControl+C', registerAccelerator: false, click: () => manda('copiaRighe') });
     voci.push({ label: 'Incolla', accelerator: 'CommandOrControl+V', registerAccelerator: false, enabled: !!ctx.copiato, click: () => manda('incollaRighe') });
-    voci.push({ type: 'separator' });
-    voci.push({ label: 'Duplica Riga', click: () => manda('duplicaRiga') });
-    voci.push({ label: ctx.barrato ? 'Togli la barratura' : 'Promo', click: () => manda('promo') });
-    voci.push({ label: ctx.quante > 1 ? 'Elimina le ' + ctx.quante + ' righe' : 'Elimina la riga', click: () => manda('eliminaRiga') });
+    voci.push({ type: 'separator' }, ...vociRiga(ctx, manda));
     Menu.buildFromTemplate(voci).popup({ window: win });
     return true;
   } else if (ctx.tipo === 'riga') {
-    voci.push({ label: 'Duplica Riga', click: () => manda('duplicaRiga') });
-    voci.push({ label: ctx.barrato ? 'Togli la barratura' : 'Promo', click: () => manda('promo') });
-    voci.push({ label: 'Elimina la riga', click: () => manda('eliminaRiga') });
+    /* dentro una casella: prima i comandi del testo, in fondo quelli della riga */
+    voci.push(
+      { role: 'cut', label: 'Taglia' },
+      { role: 'copy', label: 'Copia' },
+      { role: 'paste', label: 'Incolla' },
+      { type: 'separator' },
+      { role: 'selectAll', label: 'Seleziona tutto' },
+      { type: 'separator' },
+      ...vociRiga(ctx, manda),
+    );
+    Menu.buildFromTemplate(voci).popup({ window: win });
+    return true;
   }
 
   // i comandi di Windows, sul testo: così su un campo si può sempre incollare
