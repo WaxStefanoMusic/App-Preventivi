@@ -666,6 +666,7 @@ function applicaAspetto(){
   let tag=document.getElementById('aspettoUtente');
   if(!tag){ tag=document.createElement('style'); tag.id='aspettoUtente'; document.head.appendChild(tag); }
   tag.textContent=css;
+  if(typeof adattaColonne==='function') adattaColonne();
 }
 function salvaAspetto(){ try{ localStorage.setItem(CHIAVE_ASPETTO,JSON.stringify(ASPETTO)); }catch(_){} }
 function caricaAspetto(){
@@ -1078,7 +1079,7 @@ function vistaPreventivo(){
           <th class="num">Prezzo unitario&nbsp;€</th>
           <th class="num">Quantità</th>
           <th class="num">Imponibile&nbsp;€</th>
-          <th class="num">IVA %</th>
+          <th class="num">IVA&nbsp;%</th>
           <th class="num">Totale&nbsp;€</th>
           <th></th>
         </tr></thead>
@@ -1489,6 +1490,41 @@ function adattaDescrizioni(){ $$('#corpo textarea[data-k="descrizione"]').forEac
 /* ==============================================================================
    7. INTERAZIONE
    ============================================================================== */
+/* Le testate delle colonne non si spezzano a metà parola: «QUANTITÀ» non deve
+   diventare «QUANTIT» con la «À» sotto. Il foglio a schermo è largo quanto
+   l'A4 — su un 4K come su un 1080p — e le colonne strette restano strette
+   ovunque: qui si misura la parola più lunga di ogni testata, con il carattere
+   che ha davvero (anche se lo si è cambiato dal menu Sviluppatore), e la si fa
+   stare. Lo spazio lo cede la Descrizione, che ne ha d'avanzo. */
+function adattaColonne(){
+  const tab=$('table.voci'); if(!tab) return;
+  const cols=[...tab.querySelectorAll('colgroup col')];
+  const ths=[...tab.querySelectorAll('thead th')];
+  if(!cols.length || cols.length!==ths.length) return;
+  cols.forEach(c=>{ c.style.width=''; });              // si riparte dal foglio di stile
+  const z=parseFloat(getComputedStyle(document.documentElement).zoom)||1;
+  const sonda=document.createElement('span');
+  sonda.style.cssText='position:absolute;visibility:hidden;white-space:nowrap;left:-9999px';
+  document.body.appendChild(sonda);
+  const allarga=[];
+  ths.forEach((th,i)=>{
+    if(cols[i].classList.contains('c-desc') || !th.textContent.trim()) return;
+    const cs=getComputedStyle(th);
+    sonda.style.font=cs.font; sonda.style.letterSpacing=cs.letterSpacing; sonda.style.textTransform=cs.textTransform;
+    let parola=0;
+    for(const p of th.textContent.trim().split(/[ \n\t]+/)){
+      sonda.textContent=p; parola=Math.max(parola,sonda.getBoundingClientRect().width);
+    }
+    const serve=parola/z+parseFloat(cs.paddingLeft)+parseFloat(cs.paddingRight)+3;
+    if(th.getBoundingClientRect().width/z < serve) allarga.push([cols[i],Math.ceil(serve)]);
+  });
+  sonda.remove();
+  if(!allarga.length) return;
+  allarga.forEach(([c,w])=>{ c.style.width=w+'px'; });
+  const desc=cols.find(c=>c.classList.contains('c-desc'));
+  if(desc) desc.style.width='auto';                    // la descrizione prende quello che resta
+}
+
 function legaVista(){
   $('#btnIntest').onclick = dialogoIntestazione;
   $('#btnCliente').onclick = dialogoCliente;
@@ -1646,6 +1682,7 @@ function legaVista(){
     }
   });
   mostraSelezione();
+  adattaColonne();
 
   /* Ctrl+Invio aggiunge una riga: le mani restano sulla tastiera. */
   corpo.addEventListener('keydown', e=>{
@@ -2431,7 +2468,7 @@ function foglioStampaHTML(tabId){
         <th class="num">PREZZO UNITARIO&nbsp;€</th>
         <th class="num">QUANTITÀ</th>
         <th class="num">IMPONIBILE&nbsp;€</th>
-        <th class="num">IVA %</th>
+        <th class="num">IVA&nbsp;%</th>
         <th class="num">TOTALE&nbsp;€</th>
       </tr></thead>
       <tbody>${corpo}</tbody>

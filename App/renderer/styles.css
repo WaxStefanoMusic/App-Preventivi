@@ -302,7 +302,10 @@ table.voci{border-collapse:collapse;width:100%;font-size:var(--t-cella);table-la
 table.voci th{
   text-align:left;font-weight:620;font-size:var(--t-testata);text-transform:uppercase;letter-spacing:.02em;
   color:var(--ink-3);padding:8px 6px;background:var(--plane);border-bottom:1px solid var(--grid);
-  position:sticky;top:0;z-index:2;overflow-wrap:break-word;line-height:1.25;
+  position:sticky;top:0;z-index:2;line-height:1.25;
+  /* si va a capo solo fra una parola e l'altra, mai dentro: la larghezza giusta
+     la dà «adattaColonne» */
+  overflow-wrap:normal;word-break:keep-all;hyphens:none;
 }
 table.voci td{padding:4px 6px;border-bottom:1px solid var(--grid);vertical-align:middle}
 table.voci tbody tr:hover{background:var(--plane)}
@@ -844,6 +847,7 @@ textarea.grande{
      parola che non ci stesse comunque — meglio spezzata che sovrapposta. */
   table.st-tab th{
     text-align:left;font-weight:700;font-size:var(--t-testata);text-transform:uppercase;
+    word-break:keep-all;overflow-wrap:normal;hyphens:none;
     letter-spacing:.02em;line-height:1.25;
     padding:8px 6px;border-bottom:1pt solid #000;border-top:.6pt solid #000;
     background:transparent;overflow-wrap:break-word;
