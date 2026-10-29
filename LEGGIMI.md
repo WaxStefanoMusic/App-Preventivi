@@ -46,11 +46,12 @@ che parte finirà. Nel preventivo complessivo non si sposta niente: lì le righe
 arrivano da sezioni diverse e l'ordine è quello dei TAB. Frecce e trascinamento
 restano a schermo: sulla carta e nelle esportazioni non compaiono.
 
-**Nota.** In fondo a ogni sezione — non nel preventivo complessivo — c'è una riga
+**Nota.** In fondo a ogni sezione, e anche nel preventivo complessivo, c'è una riga
 per appuntarsi qualcosa: cresce con il testo e si apre in grande con il tasto
 `⤢`, come la Descrizione. Di suo **non** finisce nel preventivo: è un promemoria
 per chi lo scrive. Spuntando la casella a destra ci entra, e sulla carta compare
-in fondo, sotto le rate.
+in fondo, sotto le rate. La nota del complessivo è a parte: compare solo sul
+foglio del complessivo, e le note delle sezioni restano sulle loro.
 
 **Descrizione.** Il riquadro cresce con il testo; oltre le sei righe circa si
 ferma e il pulsante `⤢` diventa blu: premendolo si apre la descrizione in una

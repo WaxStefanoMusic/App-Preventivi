@@ -1595,12 +1595,13 @@ const VOCI=[
   {id:'cliente',nome:'Dati del cliente e data',dim:'--t-cliente',stampa:['.st-cliente','.st-data']},
 ];
 
-/* La nota della sezione. Il complessivo non ne ha una: lì non si scrive
-   niente, è la somma di quello che sta altrove. */
+/* La nota della sezione. Anche il complessivo ha la sua (S.note[ID_TOT]), tutta
+   sua: si vede e si stampa solo sul foglio del complessivo, mai su quello delle
+   sezioni — e le note delle sezioni non finiscono sul complessivo. */
 const notaDi = tabId => (S.note && S.note[tabId]) || {testo:'',stampa:false};
 const notaDaStampare = tabId => {
   const n=notaDi(tabId);
-  return (tabId!==ID_TOT && n.stampa && String(n.testo).trim()) ? String(n.testo) : '';
+  return (n.stampa && String(n.testo).trim()) ? String(n.testo) : '';
 };
 function scriviNota(tabId,campi){
   if(!S.note) S.note={};
@@ -2215,7 +2216,7 @@ function vistaPreventivo(){
     </div>`}
 
     <div class="totalibox noprint" id="riquadroTotali">${totaliHTML(T)}</div>
-    ${complessivo?'':notaHTML()}
+    ${notaHTML()}
   </div>`;
 }
 
